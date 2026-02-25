@@ -47,10 +47,6 @@ java {
     }
 }
 
-tasks.jar {
-    enabled = false
-}
-
 tasks.shadowJar {
     archiveBaseName.set(id)
     archiveVersion.set(apiVersion)

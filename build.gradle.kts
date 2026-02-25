@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("maven-publish")
 }
 
 subprojects {
@@ -22,4 +23,28 @@ subprojects {
 
 tasks.withType<Jar>() {
     enabled = false
+}
+
+
+subprojects {
+    plugins.withId("maven-publish") {
+        configure<PublishingExtension> {
+            repositories {
+                maven {
+                    name = "nexus"
+
+                    val snapshotsUrl = findProperty("nexusSnapshotsUrl") as String? ?: "https://repo.negative.games/repository/maven-snapshots"
+                    val releasesUrl  = findProperty("nexusReleasesUrl")  as String? ?: "https://repo.negative.games/repository/maven-releases"
+
+                    val isRelease = (findProperty("isRelease") == "true")
+                    url = uri(if (isRelease) releasesUrl else snapshotsUrl)
+
+                    credentials {
+                        username = findProperty("nexusUsername") as String?
+                        password = findProperty("nexusPassword") as String?
+                    }
+                }
+            }
+        }
+    }
 }

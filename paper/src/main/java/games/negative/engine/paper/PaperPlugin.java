@@ -6,6 +6,7 @@ import games.negative.engine.paper.scheduler.Scheduler;
 import games.negative.engine.state.Reloadable;
 import games.negative.moss.paper.MossPaper;
 import lombok.extern.slf4j.Slf4j;
+import org.bukkit.event.Listener;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.nio.file.Path;
@@ -25,6 +26,17 @@ public abstract class PaperPlugin extends MossPaper implements Plugin {
 
         Scheduler.init(this);
         MiniMessageUtil.init();
+    }
+
+    @Override
+    public void onEnable() {
+        super.onEnable();
+
+        invokeBeans(
+                Listener.class,
+                listener -> getServer().getPluginManager().registerEvents(listener, this),
+                (listener, e) -> log.error("Failed to register listener: {}", listener.getClass().getSimpleName(), e)
+        );
     }
 
     @Override

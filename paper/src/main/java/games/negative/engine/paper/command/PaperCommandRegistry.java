@@ -22,6 +22,7 @@ public class PaperCommandRegistry implements Enableable {
 
     @Override
     public void onEnable() {
+        log.info("Registering commands");
         PaperCommandManager<CommandSourceStack> commands = PaperCommandManager.builder()
                 .executionCoordinator(ExecutionCoordinator.asyncCoordinator())
                 .buildOnEnable(plugin);

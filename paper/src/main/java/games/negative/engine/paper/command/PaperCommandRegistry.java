@@ -1,7 +1,6 @@
 package games.negative.engine.paper.command;
 
 import games.negative.engine.command.CloudArgument;
-import games.negative.engine.command.CloudCommand;
 import games.negative.engine.paper.PaperPlugin;
 import games.negative.moss.spring.Enableable;
 import games.negative.moss.spring.SpringComponent;
@@ -23,6 +22,7 @@ public class PaperCommandRegistry implements Enableable {
 
     @Override
     public void onEnable() {
+        log.info("Registering commands");
         PaperCommandManager<CommandSourceStack> commands = PaperCommandManager.builder()
                 .executionCoordinator(ExecutionCoordinator.asyncCoordinator())
                 .buildOnEnable(plugin);
@@ -40,7 +40,7 @@ public class PaperCommandRegistry implements Enableable {
 
         AnnotationParser<CommandSourceStack> annotationParser = new AnnotationParser<>(commands, CommandSourceStack.class);
 
-        plugin.invokeBeans(CloudCommand.class, command -> {
+        plugin.invokeBeans(PaperCommand.class, command -> {
             command.onRegister(commands);
             annotationParser.parse(command);
             log.info("Registered command: {}", command.getClass().getSimpleName());

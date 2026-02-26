@@ -3,7 +3,10 @@ package games.negative.engine.paper;
 import games.negative.engine.Plugin;
 import games.negative.engine.message.util.MiniMessageUtil;
 import games.negative.engine.paper.scheduler.Scheduler;
+import games.negative.engine.state.Reloadable;
 import games.negative.moss.paper.MossPaper;
+import lombok.extern.slf4j.Slf4j;
+import org.bukkit.event.Listener;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.nio.file.Path;
@@ -14,6 +17,7 @@ import java.util.function.Consumer;
  * An abstract base class for Paper plugins that integrates with the Moss framework.
  * This class provides common functionality for managing plugin data directories and fetching beans from the Moss context.
  */
+@Slf4j
 public abstract class PaperPlugin extends MossPaper implements Plugin {
 
     @Override
@@ -22,6 +26,17 @@ public abstract class PaperPlugin extends MossPaper implements Plugin {
 
         Scheduler.init(this);
         MiniMessageUtil.init();
+    }
+
+    @Override
+    public void onEnable() {
+        super.onEnable();
+
+        invokeBeans(
+                Listener.class,
+                listener -> getServer().getPluginManager().registerEvents(listener, this),
+                (listener, e) -> log.error("Failed to register listener: {}", listener.getClass().getSimpleName(), e)
+        );
     }
 
     @Override
@@ -39,4 +54,12 @@ public abstract class PaperPlugin extends MossPaper implements Plugin {
         invokeBeans(clazz, consumer);
     }
 
+    @Override
+    public void reload() {
+        invokeBeans(
+                Reloadable.class,
+                Reloadable::reload,
+                (reloadable, e) -> log.error("Failed to reload {}", reloadable.getClass().getSimpleName(), e)
+        );
+    }
 }

@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-common"
 var domain = "games.negative.engine"
-var apiVersion = "1.0.0"
+var apiVersion = "1.1.0"
 
 repositories {
     mavenCentral()

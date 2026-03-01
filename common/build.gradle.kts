@@ -39,6 +39,11 @@ dependencies {
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")
+
+    // Testing
+    testImplementation(platform("org.junit:junit-bom:5.12.2"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 java {
@@ -51,6 +56,10 @@ tasks.shadowJar {
     archiveBaseName.set(id)
     archiveVersion.set(apiVersion)
     archiveClassifier.set("")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 publishing {

@@ -391,18 +391,19 @@ public class NumberUtil {
      */
     public static String condense(BigDecimal number, final char[] set) {
         BigDecimal thousand = BigDecimal.valueOf(1000);
+        String condensed;
         if (number.compareTo(thousand) < 0) {
-            return number.stripTrailingZeros().toPlainString(); // Return the number itself if less than 1000.
+            condensed = number.stripTrailingZeros().toPlainString(); // Return the number itself if less than 1000.
+        } else {
+            int exp = (int) (Math.floor(Math.log10(number.doubleValue()) / 3));
+
+            String suffixes = (set == null) ? SUFFIXES : new String(set);
+            char suffix = suffixes.charAt(Math.min(exp - 1, suffixes.length() - 1));
+
+            BigDecimal result = number.divide(thousand.pow(exp), 1, RoundingMode.HALF_UP);
+            condensed = String.format("%.1f%c", result, suffix);
         }
-
-        int exp = (int) (Math.floor(Math.log10(number.doubleValue()) / 3));
-
-        String suffixes = (set == null) ? SUFFIXES : new String(set);
-        char suffix = suffixes.charAt(Math.min(exp - 1, suffixes.length() - 1));
-
-        BigDecimal result = number.divide(thousand.pow(exp), 1, RoundingMode.HALF_UP);
-
-        return String.format("%.1f%c", result, suffix);
+        return condensed;
     }
 
     /**

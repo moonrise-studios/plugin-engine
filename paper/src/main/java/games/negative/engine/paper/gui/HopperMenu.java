@@ -2,11 +2,10 @@ package games.negative.engine.paper.gui;
 
 import games.negative.engine.message.util.MiniMessageUtil;
 import games.negative.engine.paper.gui.button.Button;
+import games.negative.engine.paper.gui.util.MenuInteractionUtil;
 import games.negative.engine.paper.gui.util.SafeUtil;
-import games.negative.engine.paper.scheduler.Scheduler;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
@@ -93,21 +92,7 @@ public abstract class HopperMenu implements UserInterface {
 
     @Override
     public void onClick(Player player, InventoryClickEvent event) {
-        if (cancelClicks) {
-            event.setCancelled(true);
-            event.setResult(Event.Result.DENY);
-        }
-
-        ItemStack current = event.getCurrentItem();
-        if (current == null) return;
-
-        String id = current.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING);
-        if (id == null) return;
-
-        Button button = buttonById.get(UUID.fromString(id));
-        if (button == null) return;
-
-        button.processClickAction(player, event);
+        MenuInteractionUtil.processClick(cancelClicks, buttonById, player, event);
     }
 
     /**
@@ -115,13 +100,7 @@ public abstract class HopperMenu implements UserInterface {
      */
     @Override
     public void open() {
-        refresh();
-
-        UserInterface.invalidateFromCache(player.getUniqueId());
-
-        CACHE.put(player.getUniqueId(), this);
-
-        Scheduler.entity(player).execute(() -> inventory.open(), 1);
+        MenuInteractionUtil.openMenu(player, this, this::refresh, () -> inventory);
     }
 
     /**
@@ -173,18 +152,7 @@ public abstract class HopperMenu implements UserInterface {
      * @param button The button to refresh
      */
     public void refreshButton(int slot, Button button) {
-        if (inventory == null) return;
-
-        Player player = (Player) inventory.getPlayer();
-
-        ItemStack stack = button.item(player);
-        if (stack == null || stack.getType().isAir()) return;
-
-        stack.editPersistentDataContainer(
-                data -> data.set(Button.KEY, PersistentDataType.STRING, button.uuid().toString())
-        );
-
-        SafeUtil.setInventoryItem(inventory, slot, stack);
+        MenuInteractionUtil.refreshButton(inventory, slot, button);
     }
 
     /**
@@ -193,12 +161,7 @@ public abstract class HopperMenu implements UserInterface {
      * @param button The button to add
      */
     public void addButton(int slot, Button button) {
-        buttons.put(slot, button);
-        buttonById.put(button.uuid(), button);
-
-        if (button.refreshIntervalTicks() <= 0L) return;
-
-        refreshingButtons.put(slot, button);
+        MenuInteractionUtil.addButton(slot, button, buttons, buttonById, refreshingButtons);
     }
 
     /**
@@ -299,16 +262,7 @@ public abstract class HopperMenu implements UserInterface {
      * @return true if the click should be cancelled
      */
     public boolean checkCancelClick(int slot) {
-        ItemStack item = inventory.getItem(slot);
-        if (item == null || item.getType().isAir()) return false;
-
-        String id = item.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING);
-        if (id == null) return false;
-
-        Button button = buttonById.get(UUID.fromString(id));
-        if (button == null) return false;
-
-        return button.cancelClick();
+        return MenuInteractionUtil.checkCancelClick(inventory, buttonById, slot);
     }
 
 }

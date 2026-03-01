@@ -256,7 +256,7 @@ public final class TimeUtil {
             if (Character.isDigit(c)) {
                 numberBuffer.append(c);
             } else if (Character.isWhitespace(c)) {
-                continue; // Allow whitespace
+                // Allow whitespace.
             } else {
                 if (numberBuffer.isEmpty()) {
                     throw new IllegalArgumentException(

@@ -1,7 +1,6 @@
 package games.negative.engine.paper.platform;
 
 import games.negative.engine.message.LocalizationPlatform;
-import games.negative.engine.message.util.PlaceholderAPIUtil;
 import games.negative.moss.spring.SpringComponent;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.audience.Audience;

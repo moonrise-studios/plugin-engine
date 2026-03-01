@@ -3,8 +3,8 @@ package games.negative.engine.paper.gui;
 import com.google.common.base.Preconditions;
 import games.negative.engine.message.util.MiniMessageUtil;
 import games.negative.engine.paper.gui.button.Button;
+import games.negative.engine.paper.gui.util.MenuInteractionUtil;
 import games.negative.engine.paper.gui.util.SafeUtil;
-import games.negative.engine.paper.scheduler.Scheduler;
 import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
@@ -200,16 +200,7 @@ public abstract class PaginatedMenu implements ChestInterface {
      */
     @Override
     public void onClick(Player player, InventoryClickEvent event) {
-        ItemStack current = event.getCurrentItem();
-        if (current == null) return;
-
-        String id = current.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING);
-        if (id == null) return;
-
-        Button button = buttonById.get(UUID.fromString(id));
-        if (button == null) return;
-
-        button.processClickAction(player, event);
+        MenuInteractionUtil.processClick(false, buttonById, player, event);
     }
 
     /**
@@ -219,13 +210,7 @@ public abstract class PaginatedMenu implements ChestInterface {
      */
     @Override
     public void open() {
-        refresh();
-
-        UserInterface.invalidateFromCache(player.getUniqueId());
-
-        CACHE.put(player.getUniqueId(), this);
-
-        Scheduler.entity(player).execute(() -> inventory.open(), 1);
+        MenuInteractionUtil.openMenu(player, this, this::refresh, () -> inventory);
     }
 
     /**
@@ -339,12 +324,7 @@ public abstract class PaginatedMenu implements ChestInterface {
                 "Slot must be between 0 and " + (rows * 9 - 1)
         );
 
-        buttons.put(slot, button);
-        buttonById.put(button.uuid(), button);
-
-        if (button.refreshIntervalTicks() <= 0L) return;
-
-        refreshingButtons.put(slot, button);
+        MenuInteractionUtil.addButton(slot, button, buttons, buttonById, refreshingButtons);
     }
 
     /**
@@ -502,16 +482,7 @@ public abstract class PaginatedMenu implements ChestInterface {
      * @return true if the click should be cancelled
      */
     public boolean checkCancelClick(int slot) {
-        ItemStack item = inventory.getItem(slot);
-        if (item == null || item.getType().isAir()) return false;
-
-        String id = item.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING);
-        if (id == null) return false;
-
-        Button button = buttonById.get(UUID.fromString(id));
-        if (button == null) return false;
-
-        return button.cancelClick();
+        return MenuInteractionUtil.checkCancelClick(inventory, buttonById, slot);
     }
 
     /**

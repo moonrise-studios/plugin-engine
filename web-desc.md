@@ -51,6 +51,8 @@ Because it integrates with Moss and Moonrise's package ecosystem, Plugin Engine 
 
 Plugin Engine showcases Moonrise Studios' approach to reusable product engineering: identify recurring development patterns, standardize them, and turn them into shared systems that raise quality and reduce build time across the studio.
 
+Portfolio assets for Plugin Engine are included directly in this repository for website publishing workflows.
+
 ## Links
 
 - **Source:** https://github.com/moonrise-studios/plugin-engine

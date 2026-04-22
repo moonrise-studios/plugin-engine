@@ -9,9 +9,9 @@ subprojects {
     repositories {
         mavenCentral()
 
-        // Negative Games
-        maven("https://repo.negative.games/repository/maven-releases/")
-        maven("https://repo.negative.games/repository/maven-snapshots/")
+        // Moonrise
+        maven("https://repo.moonrise.gg/repository/maven-releases/")
+        maven("https://repo.moonrise.gg/repository/maven-snapshots/")
 
         // PaperMC
         maven("https://repo.papermc.io/repository/maven-public/")
@@ -33,8 +33,8 @@ subprojects {
                 maven {
                     name = "nexus"
 
-                    val snapshotsUrl = findProperty("nexusSnapshotsUrl") as String? ?: "https://repo.negative.games/repository/maven-snapshots"
-                    val releasesUrl  = findProperty("nexusReleasesUrl")  as String? ?: "https://repo.negative.games/repository/maven-releases"
+                    val snapshotsUrl = findProperty("nexusSnapshotsUrl") as String? ?: "https://repo.moonrise.gg/repository/maven-snapshots"
+                    val releasesUrl  = findProperty("nexusReleasesUrl")  as String? ?: "https://repo.moonrise.gg/repository/maven-releases"
 
                     val isRelease = (findProperty("isRelease") == "true")
                     url = uri(if (isRelease) releasesUrl else snapshotsUrl)

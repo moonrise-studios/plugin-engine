@@ -2,14 +2,17 @@
 
 A Java 21 library for building Minecraft Paper plugins with reusable building blocks for commands, scheduling, GUIs, messaging, configuration, and utility helpers.
 
+Source repo: https://github.com/moonrise-studios/plugin-engine  
+Organization: https://github.com/moonrise-studios
+
 ## What this library provides
 
 `plugin-engine` is split into two modules:
 
 | Module | Artifact | Purpose |
 | --- | --- | --- |
-| common | `games.negative.engine:plugin-engine-common` | Platform-agnostic APIs and helpers (configuration, messages, command abstractions, utilities). |
-| paper | `games.negative.engine:plugin-engine-paper` | Paper-specific implementations (plugin base class, schedulers, command registration, GUI framework, item builder, jobs). |
+| common | `gg.moonrise.engine:plugin-engine-common` | Platform-agnostic APIs and helpers (configuration, messages, command abstractions, utilities). |
+| paper | `gg.moonrise.engine:plugin-engine-paper` | Paper-specific implementations (plugin base class, schedulers, command registration, GUI framework, item builder, jobs). |
 
 ## Compatibility
 
@@ -18,14 +21,14 @@ A Java 21 library for building Minecraft Paper plugins with reusable building bl
 
 ## Installation
 
-Add the Negative Games Maven repository:
+Add Moonrise Studios Maven repository:
 
 ### Gradle (Kotlin DSL)
 
 ```kotlin
 repositories {
-    maven("https://repo.negative.games/repository/maven-releases/")
-    maven("https://repo.negative.games/repository/maven-snapshots/")
+    maven("https://repo.moonrise.gg/repository/maven-releases/")
+    maven("https://repo.moonrise.gg/repository/maven-snapshots/")
 }
 ```
 
@@ -33,8 +36,8 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("games.negative.engine:plugin-engine-paper:1.0.0")
-    // or: implementation("games.negative.engine:plugin-engine-common:1.0.0")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.1.1")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.1.1")
 }
 ```
 
@@ -43,12 +46,12 @@ dependencies {
 ```xml
 <repositories>
     <repository>
-        <id>negative-games-releases</id>
-        <url>https://repo.negative.games/repository/maven-releases/</url>
+        <id>moonrise-releases</id>
+        <url>https://repo.moonrise.gg/repository/maven-releases/</url>
     </repository>
     <repository>
-        <id>negative-games-snapshots</id>
-        <url>https://repo.negative.games/repository/maven-snapshots/</url>
+        <id>moonrise-snapshots</id>
+        <url>https://repo.moonrise.gg/repository/maven-snapshots/</url>
     </repository>
 </repositories>
 ```
@@ -56,9 +59,9 @@ dependencies {
 ```xml
 <dependencies>
     <dependency>
-        <groupId>games.negative.engine</groupId>
+        <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.0.0</version>
+        <version>1.1.1</version>
     </dependency>
 </dependencies>
 ```
@@ -72,7 +75,7 @@ Use `-SNAPSHOT` versions when consuming snapshot builds.
 ```java
 package com.example;
 
-import games.negative.engine.paper.PaperPlugin;
+import gg.moonrise.engine.paper.PaperPlugin;
 
 public final class ExamplePlugin extends PaperPlugin {
 }
@@ -87,7 +90,7 @@ If you need extra runtime libraries, extend `PaperPluginLoader`:
 ```java
 package com.example;
 
-import games.negative.engine.paper.loader.PaperPluginLoader;
+import gg.moonrise.engine.paper.loader.PaperPluginLoader;
 import org.eclipse.aether.graph.Dependency;
 import io.papermc.paper.plugin.loader.library.impl.MavenLibraryResolver;
 
@@ -107,8 +110,8 @@ public final class ExamplePluginLoader extends PaperPluginLoader {
 ```java
 package com.example.command;
 
-import games.negative.engine.command.CloudCommand;
-import games.negative.moss.spring.SpringComponent;
+import gg.moonrise.engine.command.CloudCommand;
+import gg.moonrise.moss.spring.SpringComponent;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.annotations.Command;
@@ -242,4 +245,3 @@ Publishing (used by CI for `release` / `snapshot` branches):
 ./gradlew clean publish -PisRelease=true   # releases repo
 ./gradlew clean publish -PisRelease=false  # snapshots repo
 ```
-

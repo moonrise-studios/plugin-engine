@@ -5,8 +5,8 @@ plugins {
 }
 
 var id = "plugin-engine-paper"
-var domain = "games.negative.engine"
-var apiVersion = "1.1.0"
+var domain = "gg.moonrise.engine"
+var apiVersion = "1.1.1"
 
 repositories {
     mavenCentral()
@@ -23,8 +23,8 @@ dependencies {
     compileOnly("org.incendo:cloud-paper:2.0.0-beta.10")
 
     // Moss
-    compileOnly("games.negative.moss:moss-common:1.2.1")
-    compileOnly("games.negative.moss:moss-paper:1.2.1")
+    compileOnly("gg.moonrise.moss:moss-common:1.2.2")
+    compileOnly("gg.moonrise.moss:moss-paper:1.2.2")
 
     // PlaceholderAPI
     compileOnly("me.clip:placeholderapi:2.11.7")
@@ -71,7 +71,7 @@ publishing {
             pom {
                 name.set(id)
                 description.set(project.description)
-                url.set("https://github.com/negative-games/plugin-engine")
+                url.set("https://github.com/moonrise-studios/plugin-engine")
 
                 licenses {
                     license {

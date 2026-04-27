@@ -1,0 +1,26 @@
+{
+  "ready": false,
+  "productSlug": "plugin-engine",
+  "productName": "Plugin Engine",
+  "version": "",
+  "title": "",
+  "summary": "",
+  "highlights": [
+    "Fixed:",
+    "Fixed: <fix 1>",
+    "Fixed: <fix 2>",
+    " ",
+    "Added:",
+    "Added: <added 1>",
+    " ",
+    "Removed:",
+    "Removed: <removed 1>"
+  ],
+  "source": {
+    "repository": "moonrise-studios/plugin-engine",
+    "branch": "",
+    "commit": "",
+    "compare": "",
+    "notes": "Use section heading entries like Fixed:, Added:, Removed:, then item entries like Fixed: fix 1. Each item should keep the same area keyword as its section. Optional spacer entries like a single space can separate sections."
+  }
+}

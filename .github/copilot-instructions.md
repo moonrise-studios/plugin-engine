@@ -168,3 +168,19 @@ Split dimensions across `desloppify-reviewer` calls (Copilot runs them concurren
 
 <!-- desloppify-overlay: copilot -->
 <!-- desloppify-end -->
+
+## Local changelog workflow
+
+- Changelog generation is local and human initiated. Do not delegate changelog drafting to GitHub Actions or any remote CI step.
+- When the developer asks for a changelog, ask:
+  1. what should the changelog contain
+  2. how far back should it look
+  3. any context, audience, exclusions, or emphasis
+- Read `.moonrise/changelog.config.json` when present.
+- Inspect local git status, diff, and log using the developer-approved scope.
+- Keep `title` and `summary` concise.
+- Represent grouped changelog sections inside flat `highlights[]` as ordered list entries, for example `Fixed:`, `Fixed: fix 1`, `Fixed: fix 2`, ` `, `Added:`, `Added: added 1`.
+- Keep each section heading followed by item entries that repeat the same area keyword, for example `Fixed: ...`. Optional spacer entries like ` ` are allowed between sections when useful.
+- Write `.moonrise/changelog/latest.json`.
+- Set `"ready": true` only when the tracked changelog file is complete and intended for publication.
+- Do not commit, push, or publish changelog unless the developer explicitly asks.

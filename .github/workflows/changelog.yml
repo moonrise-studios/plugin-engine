@@ -1,0 +1,34 @@
+name: Publish Moonrise changelog
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - release
+      - snapshot
+    paths:
+      - ".moonrise/changelog/latest.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Inspect tracked changelog
+        id: inspect
+        run: python3 .github/scripts/moonrise_changelog.py inspect
+
+      - name: Publish changelog to Moonrise App
+        if: steps.inspect.outputs.publish == 'true'
+        env:
+          MOONRISE_API_BASE_URL: ${{ secrets.MOONRISE_API_BASE_URL }}
+          MOONRISE_INTEGRATION_TOKEN: ${{ secrets.MOONRISE_INTEGRATION_TOKEN }}
+        run: python3 .github/scripts/moonrise_changelog.py publish

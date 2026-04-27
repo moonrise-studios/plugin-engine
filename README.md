@@ -245,3 +245,54 @@ Publishing (used by CI for `release` / `snapshot` branches):
 ./gradlew clean publish -PisRelease=true   # releases repo
 ./gradlew clean publish -PisRelease=false  # snapshots repo
 ```
+
+## AI runtime files
+
+This repository now carries shared Moonrise runtime files for:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `GEMINI.md`
+- `.github/agents/*.agent.md`
+- `.claude/agents/*.md`
+- `.gemini/agents/*.md`
+
+## Local changelog workflow
+
+Tracked files:
+
+- `.moonrise/changelog.config.json`
+- `.moonrise/changelog/latest.json`
+
+Publish workflow:
+
+- `.github/workflows/changelog.yml`
+
+Publish helper:
+
+- `.github/scripts/moonrise_changelog.py`
+
+Expected developer flow:
+
+1. make local changes
+2. ask local agent to create changelog
+3. answer:
+   - what should changelog contain
+   - how far back should it look
+   - any context, exclusions, or emphasis
+4. review `.moonrise/changelog/latest.json`
+5. commit changelog with code changes
+6. push watched branch
+7. GitHub Actions publishes committed changelog to Moonrise App
+
+Changelog format:
+
+- keep normal `title` and `summary`
+- use `highlights[]` as ordered list entries with section headings and bullet lines
+- example:
+  - `Fixed:`
+  - `* corrected scheduler behavior for plugin consumers`
+  - `* tightened command registration notes`
+  - ` `
+  - `Added:`
+  - `* added clearer packaging guidance for consumers`

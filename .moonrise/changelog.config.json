@@ -1,0 +1,14 @@
+{
+  "productSlug": "plugin-engine",
+  "productName": "Plugin Engine",
+  "outputPath": ".moonrise/changelog/latest.json",
+  "publish": true,
+  "defaultLookbackGuidance": "Ask developer what range to cover before generating.",
+  "promptContext": "Focus on reusable Paper plugin engine behavior, commands, scheduler, GUI, config handling, packaging, library consumers, docs, and contributor-facing changes.",
+  "sectionGuidance": [
+    "Keep title and summary concise.",
+    "After summary, organize changelog details into labeled areas such as Fixed, Added, Changed, Removed, Security, Docs, Internal, or other clear headings when applicable.",
+    "Moonrise publish payload still uses flat highlights[], so write section heading entries like 'Fixed:' or 'Added:', then item entries that repeat the same area keyword, such as 'Fixed: corrected startup ordering' or 'Added: module bootstrap checks'. Do not add a leading '* ' in changelog creation.",
+    "Keep each section heading followed by item entries that repeat the same area keyword, for example 'Fixed: ...'. Optional spacer entries like ' ' are allowed between sections when useful."
+  ]
+}

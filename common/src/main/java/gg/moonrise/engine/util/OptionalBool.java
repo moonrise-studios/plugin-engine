@@ -13,7 +13,7 @@ import java.util.Optional;
  * <p>The class uses a singleton pattern for the two possible instances ({@code true} and {@code false})
  * to ensure memory efficiency and reference equality for instances with the same boolean value.</p>
  *
- * <h3>Usage Examples:</h3>
+ * <h2>Usage Examples:</h2>
  * <pre>{@code
  * OptionalBool condition = OptionalBool.of(someCondition);
  *
@@ -218,4 +218,3 @@ public class OptionalBool {
         return "OptionalBool[" + value + "]";
     }
 }
-

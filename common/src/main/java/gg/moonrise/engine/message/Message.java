@@ -24,7 +24,7 @@ public record Message(String content) {
     }
 
     /**
-     * Creates a Message object from multiple lines of strings, joining them with the <newline> delimiter.
+     * Creates a Message object from multiple lines of strings, joining them with the {@code <newline>} delimiter.
      * @param lines the lines of strings to join
      * @return a Message object containing the joined content
      */
@@ -33,7 +33,7 @@ public record Message(String content) {
     }
 
     /**
-     * Creates a Message object from a list of strings, joining them with the <newline> delimiter.
+     * Creates a Message object from a list of strings, joining them with the {@code <newline>} delimiter.
      * @param lines the list of strings to join
      * @return a Message object containing the joined content
      */

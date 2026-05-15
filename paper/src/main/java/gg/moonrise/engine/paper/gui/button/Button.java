@@ -20,7 +20,7 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public final class Button {
 
-    public static final NamespacedKey KEY = new NamespacedKey("skylands-ui", "button-uuid");
+    public static final NamespacedKey KEY = new NamespacedKey("engine-ui", "button-uuid");
 
     private final Function<Player, ItemStack> displayItem;
     private final ButtonClickAction clickAction;

@@ -36,8 +36,8 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.1.1")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.1.1")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.1.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.1.2")
 }
 ```
 
@@ -61,7 +61,7 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.1.1</version>
+        <version>1.1.2</version>
     </dependency>
 </dependencies>
 ```
@@ -182,7 +182,7 @@ public final class ExampleMenu extends ChestMenu {
 }
 ```
 
-Menus are cached per-player and handled by `PlayerInventoryController`.
+Menus are backed by Bukkit `InventoryHolder` instances and handled by `PlayerInventoryController`.
 
 ## Messages and placeholders
 

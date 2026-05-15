@@ -1,12 +1,11 @@
 package gg.moonrise.engine.paper.gui.util;
 
-import gg.moonrise.engine.paper.gui.UserInterface;
 import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.scheduler.Scheduler;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -45,25 +44,22 @@ public final class MenuInteractionUtil {
 
     public static void openMenu(
             Player player,
-            UserInterface ui,
             Runnable refreshAction,
-            Supplier<InventoryView> inventorySupplier
+            Supplier<Inventory> inventorySupplier
     ) {
         refreshAction.run();
 
-        UserInterface.invalidateFromCache(player.getUniqueId());
-        UserInterface.CACHE.put(player.getUniqueId(), ui);
-
         Scheduler.entity(player).execute(() -> {
-            InventoryView view = inventorySupplier.get();
-            if (view != null) view.open();
+            Inventory inventory = inventorySupplier.get();
+            if (inventory != null) player.openInventory(inventory);
         }, 1);
     }
 
-    public static void refreshButton(InventoryView inventory, int slot, Button button) {
+    public static void refreshButton(Inventory inventory, int slot, Button button) {
         if (inventory == null) return;
+        if (inventory.getViewers().isEmpty()) return;
 
-        Player player = (Player) inventory.getPlayer();
+        Player player = (Player) inventory.getViewers().getFirst();
         ItemStack stack = button.item(player);
         if (stack == null || stack.getType().isAir()) return;
 
@@ -88,7 +84,7 @@ public final class MenuInteractionUtil {
         refreshingButtons.put(slot, button);
     }
 
-    public static boolean checkCancelClick(InventoryView inventory, Map<UUID, Button> buttonById, int slot) {
+    public static boolean checkCancelClick(Inventory inventory, Map<UUID, Button> buttonById, int slot) {
         if (inventory == null) return false;
 
         ItemStack item = inventory.getItem(slot);

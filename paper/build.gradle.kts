@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-paper"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.1.1"
+var apiVersion = "1.1.2"
 
 repositories {
     mavenCentral()
@@ -39,12 +39,23 @@ dependencies {
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")
+
+    // Testing
+    testImplementation(platform("org.junit:junit-bom:5.12.2"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.76.1")
+    testImplementation("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
+    testImplementation("net.kyori:adventure-text-serializer-plain:4.26.1")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
+
+    withSourcesJar()
+    withJavadocJar()
 }
 
 tasks.jar {
@@ -57,12 +68,16 @@ tasks.shadowJar {
     archiveClassifier.set("")
 }
 
+tasks.test {
+    useJUnitPlatform()
+}
+
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            artifact(tasks.shadowJar) {
-                builtBy(tasks.shadowJar)
-            }
+            from(components["shadow"])
+            artifact(tasks.named<Jar>("sourcesJar"))
+            artifact(tasks.named<Jar>("javadocJar"))
 
             groupId = domain
             artifactId = id

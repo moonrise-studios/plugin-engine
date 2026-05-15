@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-common"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.1.1"
+var apiVersion = "1.1.2"
 
 repositories {
     mavenCentral()
@@ -50,6 +50,9 @@ java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
+
+    withSourcesJar()
+    withJavadocJar()
 }
 
 tasks.shadowJar {
@@ -65,9 +68,9 @@ tasks.test {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            artifact(tasks.shadowJar) {
-                builtBy(tasks.shadowJar)
-            }
+            from(components["shadow"])
+            artifact(tasks.named<Jar>("sourcesJar"))
+            artifact(tasks.named<Jar>("javadocJar"))
 
             groupId = domain
             artifactId = id

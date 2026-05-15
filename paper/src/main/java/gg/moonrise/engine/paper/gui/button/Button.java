@@ -2,8 +2,10 @@ package gg.moonrise.engine.paper.gui.button;
 
 import lombok.RequiredArgsConstructor;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
@@ -26,15 +28,15 @@ public final class Button {
     private final long refreshIntervalTicks;
     private final boolean cancelClicks;
     private long lastRefreshTime = 0L;
-    private InventoryView boundingInventory;
+    private Inventory inventory;
 
 
     /**
      * Executes onAddToInventory.
      * @param inventory the inventory
      */
-    public void onAddToInventory(InventoryView inventory) {
-        this.boundingInventory = inventory;
+    public void onAddToInventory(Inventory inventory) {
+        this.inventory = inventory;
     }
 
     /**
@@ -75,10 +77,26 @@ public final class Button {
 
     /**
      * Gets the inventory that this button is bound to.
+     * @return the inventory
+     */
+    public Inventory inventory() {
+        return inventory;
+    }
+
+    /**
+     * Gets the inventory view that this button is bound to.
      * @return the bounding inventory
      */
+    @Deprecated(forRemoval = false)
     public InventoryView boundingInventory() {
-        return boundingInventory;
+        if (inventory == null) return null;
+
+        for (HumanEntity viewer : inventory.getViewers()) {
+            InventoryView view = viewer.getOpenInventory();
+            if (view.getTopInventory().equals(inventory)) return view;
+        }
+
+        return null;
     }
 
     /**

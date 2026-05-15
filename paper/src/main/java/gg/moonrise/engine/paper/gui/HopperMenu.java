@@ -2,16 +2,19 @@ package gg.moonrise.engine.paper.gui;
 
 import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.gui.button.Button;
+import gg.moonrise.engine.paper.gui.holder.HopperMenuHolder;
 import gg.moonrise.engine.paper.gui.util.MenuInteractionUtil;
 import gg.moonrise.engine.paper.gui.util.SafeUtil;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.MenuType;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.Contract;
 
@@ -20,8 +23,7 @@ import java.util.*;
 /**
  * Represents a chest-based GUI menu for players.
  * This class manages button placement, click handling, and automatic refreshing
- * of dynamic buttons. Menus are cached per-player and automatically cleaned up
- * when closed.
+ * of dynamic buttons. Menus are routed through their inventory holder.
  */
 public abstract class HopperMenu implements UserInterface {
 
@@ -31,7 +33,7 @@ public abstract class HopperMenu implements UserInterface {
     private final Map<UUID, Button> buttonById = new HashMap<>();
     private final Map<Integer, Button> refreshingButtons = new HashMap<>();
 
-    protected InventoryView inventory;
+    protected Inventory inventory;
     private boolean cancelClicks = true;
 
     private final Player player;
@@ -81,7 +83,7 @@ public abstract class HopperMenu implements UserInterface {
      */
     @Override
     public void onClose(Player player, InventoryCloseEvent event) {
-        UserInterface.invalidateFromCache(player.getUniqueId());
+        invalidate();
     }
 
     /**
@@ -100,7 +102,7 @@ public abstract class HopperMenu implements UserInterface {
      */
     @Override
     public void open() {
-        MenuInteractionUtil.openMenu(player, this, this::refresh, () -> inventory);
+        MenuInteractionUtil.openMenu(player, this::refresh, () -> inventory);
     }
 
     /**
@@ -119,7 +121,7 @@ public abstract class HopperMenu implements UserInterface {
     @Override
     public void refresh() {
         if (inventory == null)
-            inventory = MenuType.HOPPER.create(player, title);
+            inventory = createInventory();
 
         clearInventory(inventory);
 
@@ -169,7 +171,7 @@ public abstract class HopperMenu implements UserInterface {
      * @param button The button to add
      */
     public void addButton(Button button) {
-        for (int i = 0; i < inventory.getTopInventory().getSize(); i++) {
+        for (int i = 0; i < InventoryType.HOPPER.getDefaultSize(); i++) {
             if (buttons.containsKey(i)) continue;
 
             addButton(i, button);
@@ -232,12 +234,27 @@ public abstract class HopperMenu implements UserInterface {
     }
 
     /**
+     * Get the Inventory associated with this menu
+     * @return The Inventory
+     */
+    @Override
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    /**
      * Get the InventoryView associated with this menu
      * @return The InventoryView
      */
     @Override
+    @Deprecated(forRemoval = false)
     public InventoryView getView() {
-        return inventory;
+        if (inventory == null) return null;
+
+        InventoryView view = player.getOpenInventory();
+        if (!view.getTopInventory().equals(inventory)) return null;
+
+        return view;
     }
 
     /**
@@ -263,6 +280,13 @@ public abstract class HopperMenu implements UserInterface {
      */
     public boolean checkCancelClick(int slot) {
         return MenuInteractionUtil.checkCancelClick(inventory, buttonById, slot);
+    }
+
+    private Inventory createInventory() {
+        HopperMenuHolder holder = new HopperMenuHolder(this);
+        Inventory created = Bukkit.createInventory(holder, InventoryType.HOPPER, title);
+        holder.setInventory(created);
+        return created;
     }
 
 }

@@ -3,13 +3,16 @@ package gg.moonrise.engine.paper.gui;
 import com.google.common.base.Preconditions;
 import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.gui.button.Button;
+import gg.moonrise.engine.paper.gui.holder.ChestMenuHolder;
 import gg.moonrise.engine.paper.gui.util.MenuInteractionUtil;
 import gg.moonrise.engine.paper.gui.util.SafeUtil;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -20,8 +23,7 @@ import java.util.*;
 /**
  * Represents a chest-based GUI menu for players.
  * This class manages button placement, click handling, and automatic refreshing
- * of dynamic buttons. Menus are cached per-player and automatically cleaned up
- * when closed.
+ * of dynamic buttons. Menus are routed through their inventory holder.
  */
 public abstract class ChestMenu implements ChestInterface {
 
@@ -32,7 +34,7 @@ public abstract class ChestMenu implements ChestInterface {
     private final Map<UUID, Button> buttonById = new HashMap<>();
     private final Map<Integer, Button> refreshingButtons = new HashMap<>();
 
-    protected InventoryView inventory;
+    protected Inventory inventory;
     private boolean cancelClicks = true;
 
     private final Player player;
@@ -97,7 +99,7 @@ public abstract class ChestMenu implements ChestInterface {
      */
     @Override
     public void onClose(Player player, InventoryCloseEvent event) {
-        UserInterface.invalidateFromCache(player.getUniqueId());
+        invalidate();
     }
 
     /**
@@ -116,7 +118,7 @@ public abstract class ChestMenu implements ChestInterface {
      */
     @Override
     public void open() {
-        MenuInteractionUtil.openMenu(player, this, this::refresh, () -> inventory);
+        MenuInteractionUtil.openMenu(player, this::refresh, () -> inventory);
     }
 
     /**
@@ -135,7 +137,7 @@ public abstract class ChestMenu implements ChestInterface {
     @Override
     public void refresh() {
         if (inventory == null)
-            inventory = typeFromRows(rows).create(player, title);
+            inventory = createInventory();
 
         clearInventory(inventory);
 
@@ -253,12 +255,27 @@ public abstract class ChestMenu implements ChestInterface {
     }
 
     /**
+     * Get the Inventory associated with this ChestMenu
+     * @return The Inventory
+     */
+    @Override
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    /**
      * Get the InventoryView associated with this ChestMenu
      * @return The InventoryView
      */
     @Override
+    @Deprecated(forRemoval = false)
     public InventoryView getView() {
-        return inventory;
+        if (inventory == null) return null;
+
+        InventoryView view = player.getOpenInventory();
+        if (!view.getTopInventory().equals(inventory)) return null;
+
+        return view;
     }
 
     /**
@@ -284,6 +301,13 @@ public abstract class ChestMenu implements ChestInterface {
      */
     public boolean checkCancelClick(int slot) {
         return MenuInteractionUtil.checkCancelClick(inventory, buttonById, slot);
+    }
+
+    private Inventory createInventory() {
+        ChestMenuHolder holder = new ChestMenuHolder(this);
+        Inventory created = Bukkit.createInventory(holder, rows * 9, title);
+        holder.setInventory(created);
+        return created;
     }
 
 }

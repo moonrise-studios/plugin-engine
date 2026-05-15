@@ -3,14 +3,17 @@ package gg.moonrise.engine.paper.gui;
 import com.google.common.base.Preconditions;
 import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.gui.button.Button;
+import gg.moonrise.engine.paper.gui.holder.PaginatedMenuHolder;
 import gg.moonrise.engine.paper.gui.util.MenuInteractionUtil;
 import gg.moonrise.engine.paper.gui.util.SafeUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -22,8 +25,7 @@ import java.util.function.Function;
 /**
  * Represents a chest-based GUI menu for players.
  * This class manages button placement, click handling, and automatic refreshing
- * of dynamic buttons. Menus are cached per-player and automatically cleaned up
- * when closed.
+ * of dynamic buttons. Menus are routed through their inventory holder.
  */
 @Slf4j
 public abstract class PaginatedMenu implements ChestInterface {
@@ -45,7 +47,7 @@ public abstract class PaginatedMenu implements ChestInterface {
     private final List<Integer> contentSlots = new ArrayList<>();
     private final Map<Integer, Button> refreshingContentButtons = new HashMap<>();
 
-    protected InventoryView inventory;
+    protected Inventory inventory;
     private boolean cancelClicks = true;
 
     /**
@@ -183,13 +185,13 @@ public abstract class PaginatedMenu implements ChestInterface {
 
     /**
      * Handle the event when a player closes the inventory.
-     * This method invalidates the menu from the cache to free up resources.
+     * This method invalidates the menu to free up resources.
      * @param player The player who closed the inventory.
      * @param event The InventoryCloseEvent triggered by the player closing the inventory.
      */
     @Override
     public void onClose(Player player, InventoryCloseEvent event) {
-        UserInterface.invalidateFromCache(player.getUniqueId());
+        invalidate();
     }
 
     /**
@@ -205,12 +207,11 @@ public abstract class PaginatedMenu implements ChestInterface {
 
     /**
      * Open the chest menu for the player.
-     * This method refreshes the menu, invalidates any existing cached menu for the player,
-     * caches the current menu, and opens the inventory for the player.
+     * This method refreshes the menu and opens the inventory for the player.
      */
     @Override
     public void open() {
-        MenuInteractionUtil.openMenu(player, this, this::refresh, () -> inventory);
+        MenuInteractionUtil.openMenu(player, this::refresh, () -> inventory);
     }
 
     /**
@@ -231,7 +232,7 @@ public abstract class PaginatedMenu implements ChestInterface {
     @Override
     public void refresh() {
         if (inventory == null)
-            inventory = typeFromRows(rows).create(player, title);
+            inventory = createInventory();
 
         clearInventory(inventory);
 
@@ -452,12 +453,27 @@ public abstract class PaginatedMenu implements ChestInterface {
     }
 
     /**
+     * Get the Inventory of this menu
+     * @return The Inventory
+     */
+    @Override
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    /**
      * Get the InventoryView of this menu
      * @return The InventoryView
      */
     @Override
+    @Deprecated(forRemoval = false)
     public InventoryView getView() {
-        return inventory;
+        if (inventory == null) return null;
+
+        InventoryView view = player.getOpenInventory();
+        if (!view.getTopInventory().equals(inventory)) return null;
+
+        return view;
     }
 
     /**
@@ -500,6 +516,13 @@ public abstract class PaginatedMenu implements ChestInterface {
 
         SafeUtil.setInventoryItem(inventory, slot, stack);
         button.onAddToInventory(inventory);
+    }
+
+    private Inventory createInventory() {
+        PaginatedMenuHolder holder = new PaginatedMenuHolder(this);
+        Inventory created = Bukkit.createInventory(holder, rows * 9, title);
+        holder.setInventory(created);
+        return created;
     }
 
 }

@@ -53,6 +53,9 @@ java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
+
+    withSourcesJar()
+    withJavadocJar()
 }
 
 tasks.jar {
@@ -72,9 +75,9 @@ tasks.test {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            artifact(tasks.shadowJar) {
-                builtBy(tasks.shadowJar)
-            }
+            from(components["shadow"])
+            artifact(tasks.named<Jar>("sourcesJar"))
+            artifact(tasks.named<Jar>("javadocJar"))
 
             groupId = domain
             artifactId = id

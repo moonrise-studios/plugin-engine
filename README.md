@@ -182,7 +182,7 @@ public final class ExampleMenu extends ChestMenu {
 }
 ```
 
-Menus are cached per-player and handled by `PlayerInventoryController`.
+Menus are backed by Bukkit `InventoryHolder` instances and handled by `PlayerInventoryController`.
 
 ## Messages and placeholders
 

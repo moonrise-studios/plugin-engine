@@ -4,19 +4,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Represents the UserInterface interface.
  */
 
 public interface UserInterface {
-
-    Map<UUID, UserInterface> CACHE = new HashMap<>();
 
     /**
      * Called when a player opens an inventory.
@@ -53,19 +48,27 @@ public interface UserInterface {
     void refresh();
 
     /**
+     * Gets the Inventory associated with this UserInterface.
+     *
+     * @return The Inventory of this UserInterface.
+     */
+    Inventory getInventory();
+
+    /**
      * Gets the InventoryView associated with this UserInterface.
      *
      * @return The InventoryView of this UserInterface.
      */
+    @Deprecated(forRemoval = false)
     InventoryView getView();
 
     /**
-     * Clears the inventory view by setting all items in the top inventory to null.
-     * @param view The InventoryView to clear.
+     * Clears the inventory by setting all items to null.
+     * @param inventory The Inventory to clear.
      */
-    default void clearInventory(InventoryView view) {
-        for (int i = 0; i < view.getTopInventory().getSize(); i++) {
-            view.getTopInventory().setItem(i, null);
+    default void clearInventory(Inventory inventory) {
+        for (int i = 0; i < inventory.getSize(); i++) {
+            inventory.setItem(i, null);
         }
     }
 
@@ -86,11 +89,4 @@ public interface UserInterface {
      * Invalidate the current state of the UserInterface.
      */
     void invalidate();
-
-    static void invalidateFromCache(UUID uuid) {
-        UserInterface ui = CACHE.remove(uuid);
-        if (ui == null) return;
-
-        ui.invalidate();
-    }
 }

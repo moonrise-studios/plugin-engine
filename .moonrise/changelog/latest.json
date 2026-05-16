@@ -2,25 +2,30 @@
   "ready": false,
   "productSlug": "plugin-engine",
   "productName": "Plugin Engine",
-  "version": "",
-  "title": "",
-  "summary": "",
+  "version": "1.1.2",
+  "title": "Menu holder refactor, test expansion, and release artifact improvements",
+  "summary": "Since de29c7dd, Plugin Engine modernized menu holder flow, added broad Paper test coverage, and ensured Nexus releases publish sources and Javadocs alongside runtime artifacts.",
   "highlights": [
-    "Fixed:",
-    "Fixed: <fix 1>",
-    "Fixed: <fix 2>",
+    "Changed:",
+    "Changed: revamped chest, hopper, paginated, and base UI holder flow to use dedicated InteractiveMenuHolder implementations and cleaner inventory routing",
+    "Changed: removed holder cache usage and updated inventory controller/menu interaction internals for safer menu lifecycle handling",
     " ",
     "Added:",
-    "Added: <added 1>",
+    "Added: comprehensive Paper-side tests for GUI menus, button behavior, cooldowns, item builder, AABB utilities, and MockBukkit integration scaffolding",
+    "Added: dedicated menu holder classes for chest, hopper, and paginated menus to improve separation of concerns in GUI internals",
     " ",
-    "Removed:",
-    "Removed: <removed 1>"
+    "Internal:",
+    "Internal: release publishing now includes source and Javadocs JARs for Nexus publication",
+    "Internal: dependency and build updates to support Paper test dependencies and JUnit platform execution",
+    " ",
+    "Docs:",
+    "Docs: README dependency examples were refreshed to align with the updated 1.1.2 coordinates"
   ],
   "source": {
     "repository": "moonrise-studios/plugin-engine",
-    "branch": "",
-    "commit": "",
-    "compare": "",
+    "branch": "copilot/create-changelog-not-ready",
+    "commit": "aedecbabb08f81a81192d4c7cd05d439a02c2b47",
+    "compare": "https://github.com/moonrise-studios/plugin-engine/compare/de29c7dd8c5de9bf5ef033324d450b84d4615819...aedecbabb08f81a81192d4c7cd05d439a02c2b47",
     "notes": "Use section heading entries like Fixed:, Added:, Removed:, then item entries like Fixed: fix 1. Each item should keep the same area keyword as its section. Optional spacer entries like a single space can separate sections."
   }
 }

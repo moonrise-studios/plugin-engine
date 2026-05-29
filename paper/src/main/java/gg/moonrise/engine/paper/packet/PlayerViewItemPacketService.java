@@ -88,7 +88,7 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
                 return;
             }
             if (event.getPacketType() == PacketType.Play.Server.SET_CURSOR_ITEM) {
-                handleSetCursorItem(event, player);
+//                handleSetCursorItem(event, player);
                 return;
             }
             if (event.getPacketType() == PacketType.Play.Server.SET_PLAYER_INVENTORY) {

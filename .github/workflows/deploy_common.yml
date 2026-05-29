@@ -1,4 +1,4 @@
-name: Deploy to Moonrise Nexus (Gradle)
+name: Deploy Common to Moonrise Nexus (Gradle)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - snapshot
 
 jobs:
-  deploy:
+  deploy_common:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,28 +33,23 @@ jobs:
           nexusReleasesUrl=https://repo.moonrise.gg/repository/maven-releases
           EOF
 
-      # Modify version for release branch (remove -SNAPSHOT)
-      - name: Modify version for release
+      - name: Modify common version for release
         if: github.ref == 'refs/heads/release'
         run: |
-          find . -name "build.gradle.kts" -type f -exec sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" {} +
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" common/build.gradle.kts
 
-      # Modify version for snapshot branch (add -SNAPSHOT if not present)
-      - name: Modify version for snapshot
+      - name: Modify common version for snapshot
         if: github.ref == 'refs/heads/snapshot'
         run: |
-          find . -name "build.gradle.kts" -type f -exec sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" {} +
+          sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" common/build.gradle.kts
 
-      # Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Deploy to RELEASES on release branch
-      - name: Build and deploy release
+      - name: Build and deploy common release
         if: github.ref == 'refs/heads/release'
-        run: ./gradlew clean publish -PisRelease=true
+        run: ./gradlew clean :common:publish -PisRelease=true
 
-      # Deploy to SNAPSHOTS on snapshot branch
-      - name: Build and deploy snapshot
+      - name: Build and deploy common snapshot
         if: github.ref == 'refs/heads/snapshot'
-        run: ./gradlew clean publish -PisRelease=false
+        run: ./gradlew clean :common:publish -PisRelease=false

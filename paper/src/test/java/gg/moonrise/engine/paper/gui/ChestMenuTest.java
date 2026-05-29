@@ -4,7 +4,9 @@ import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.support.MockBukkitTest;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
@@ -48,11 +50,16 @@ class ChestMenuTest extends MockBukkitTest {
         menu.addButton(4, button);
         menu.refresh();
 
-        ItemStack rendered = menu.getView().getTopInventory().getItem(4);
+        Inventory inventory = menu.getInventory();
+        assertNotNull(inventory);
+
+        ItemStack rendered = inventory.getItem(4);
         assertNotNull(rendered);
         assertEquals(Material.EMERALD, rendered.getType());
-        assertEquals(button.uuid().toString(), rendered.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING));
-        assertEquals(menu.getView(), button.boundingInventory());
+        ItemMeta meta = rendered.getItemMeta();
+        assertNotNull(meta);
+        assertEquals(button.uuid().toString(), meta.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING));
+        assertEquals(inventory, button.inventory());
         assertEquals(1, menu.getRefreshingButtons().size());
         assertTrue(menu.checkCancelClick(4));
     }

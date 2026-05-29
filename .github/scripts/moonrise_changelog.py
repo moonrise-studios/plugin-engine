@@ -35,15 +35,11 @@ def require_string(payload: dict[str, Any], key: str) -> str:
     return value.strip()
 
 
-def require_highlights(payload: dict[str, Any]) -> list[str]:
-    value = payload.get("highlights")
-    if not isinstance(value, list):
-        raise ValueError("Field 'highlights' must be array.")
-
-    cleaned = [item.strip() for item in value if isinstance(item, str) and item.strip()]
-    if not cleaned:
-        raise ValueError("Field 'highlights' must contain at least one non-empty string.")
-    return cleaned
+def require_body(payload: dict[str, Any]) -> str:
+    value = payload.get("body")
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("Field 'body' must be a non-empty string.")
+    return value.strip()
 
 
 def load_payload() -> tuple[dict[str, Any], dict[str, Any], Path]:
@@ -61,7 +57,7 @@ def validate_ready_payload(config: dict[str, Any], payload: dict[str, Any]) -> N
     require_string(payload, "version")
     require_string(payload, "title")
     require_string(payload, "summary")
-    require_highlights(payload)
+    require_body(payload)
 
     source = payload.get("source")
     if not isinstance(source, dict):
@@ -110,7 +106,7 @@ def command_publish(_: argparse.Namespace) -> int:
         "version": payload["version"],
         "title": payload["title"],
         "summary": payload["summary"],
-        "highlights": payload["highlights"],
+        "body": payload["body"],
         "publish": True,
     }
 

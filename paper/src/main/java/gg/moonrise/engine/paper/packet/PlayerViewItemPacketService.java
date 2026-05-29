@@ -79,20 +79,17 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
             Object rawPlayer = event.getPlayer();
             if (!(rawPlayer instanceof Player player)) return;
 
-            if (event.getPacketType() == PacketType.Play.Server.SET_SLOT) {
-                handleSetSlot(event, player);
-                return;
-            }
-            if (event.getPacketType() == PacketType.Play.Server.WINDOW_ITEMS) {
-                handleWindowItems(event, player);
-                return;
-            }
-            if (event.getPacketType() == PacketType.Play.Server.SET_CURSOR_ITEM) {
-//                handleSetCursorItem(event, player);
-                return;
-            }
-            if (event.getPacketType() == PacketType.Play.Server.SET_PLAYER_INVENTORY) {
-                handleSetPlayerInventory(event, player);
+            switch (event.getPacketType()) {
+                case PacketType.Play.Server.SET_SLOT -> handleSetSlot(event, player);
+
+                case PacketType.Play.Server.WINDOW_ITEMS -> handleWindowItems(event, player);
+
+                case PacketType.Play.Server.SET_CURSOR_ITEM -> handleSetCursorItem(event, player);
+
+                case PacketType.Play.Server.SET_PLAYER_INVENTORY -> handleSetPlayerInventory(event, player);
+
+                default -> {
+                }
             }
         }
 

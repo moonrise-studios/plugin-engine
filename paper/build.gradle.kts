@@ -10,8 +10,6 @@ var apiVersion = "1.2.2"
 
 repositories {
     mavenCentral()
-    maven("https://repo.codemc.io/repository/maven-releases/")
-    maven("https://repo.codemc.io/repository/maven-snapshots/")
 }
 
 dependencies {
@@ -19,9 +17,6 @@ dependencies {
 
     // Paper
     compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
-
-    // PacketEvents
-    compileOnly("com.github.retrooper:packetevents-spigot:2.12.1")
 
     // Cloud Command Framework
     compileOnly("org.incendo:cloud-annotations:2.0.0")

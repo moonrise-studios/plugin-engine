@@ -21,12 +21,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Owns PacketEvents item-stack packet interception for PlayerViewItemEvent.
@@ -34,7 +38,7 @@ import java.util.Objects;
 @Slf4j
 @SpringComponent
 @RequiredArgsConstructor
-public final class PlayerViewItemPacketService implements Enableable, Disableable {
+public final class PlayerViewItemPacketService implements Enableable, Disableable, Listener {
 
     private final PaperPlugin plugin;
     private Object registeredListener;
@@ -57,8 +61,15 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
     public void onDisable() {
         if (registeredListener == null) return;
         PacketEvents.getAPI().getEventManager().unregisterListener((PacketListenerCommon) registeredListener);
+        listener.clearCache();
         registeredListener = null;
         listener = null;
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        if (listener == null) return;
+        listener.clearCache(event.getPlayer().getUniqueId());
     }
 
     private boolean isPacketEventsEnabled() {
@@ -69,9 +80,22 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
     private static final class PlayerViewItemPacketListener implements PacketListener {
 
         private final PaperPlugin plugin;
+        private final ClientItemCache<com.github.retrooper.packetevents.protocol.item.ItemStack> cache =
+                new ClientItemCache<>(
+                        com.github.retrooper.packetevents.protocol.item.ItemStack::isEmpty,
+                        com.github.retrooper.packetevents.protocol.item.ItemStack::copy
+                );
 
         private PlayerViewItemPacketListener(PaperPlugin plugin) {
             this.plugin = plugin;
+        }
+
+        private void clearCache() {
+            cache.clear();
+        }
+
+        private void clearCache(UUID playerId) {
+            cache.clear(playerId);
         }
 
         @Override
@@ -95,7 +119,7 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
 
         private void handleSetSlot(PacketSendEvent event, Player player) {
             WrapperPlayServerSetSlot wrapper = new WrapperPlayServerSetSlot(event);
-            com.github.retrooper.packetevents.protocol.item.ItemStack replacement = callEvent(
+            com.github.retrooper.packetevents.protocol.item.ItemStack replacement = resolveClientItem(
                     player,
                     wrapper.getItem(),
                     PlayerViewItemEvent.Source.SET_SLOT,
@@ -112,11 +136,11 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
         private void handleWindowItems(PacketSendEvent event, Player player) {
             WrapperPlayServerWindowItems wrapper = new WrapperPlayServerWindowItems(event);
             List<com.github.retrooper.packetevents.protocol.item.ItemStack> items = wrapper.getItems();
-            List<com.github.retrooper.packetevents.protocol.item.ItemStack> replacedItems = new ArrayList<>(items);
+            List<com.github.retrooper.packetevents.protocol.item.ItemStack> replacedItems = null;
             boolean changed = false;
 
             for (int slot = 0; slot < items.size(); slot++) {
-                com.github.retrooper.packetevents.protocol.item.ItemStack replacement = callEvent(
+                com.github.retrooper.packetevents.protocol.item.ItemStack replacement = resolveClientItem(
                         player,
                         items.get(slot),
                         PlayerViewItemEvent.Source.WINDOW_ITEMS,
@@ -126,6 +150,7 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
                 );
                 if (replacement == null) continue;
 
+                if (replacedItems == null) replacedItems = new ArrayList<>(items);
                 replacedItems.set(slot, replacement);
                 changed = true;
             }
@@ -135,7 +160,7 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
             }
 
             if (wrapper.getCarriedItem().isPresent()) {
-                com.github.retrooper.packetevents.protocol.item.ItemStack replacement = callEvent(
+                com.github.retrooper.packetevents.protocol.item.ItemStack replacement = resolveClientItem(
                         player,
                         wrapper.getCarriedItem().get(),
                         PlayerViewItemEvent.Source.WINDOW_CARRIED_ITEM,
@@ -156,7 +181,7 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
 
         private void handleSetCursorItem(PacketSendEvent event, Player player) {
             WrapperPlayServerSetCursorItem wrapper = new WrapperPlayServerSetCursorItem(event);
-            com.github.retrooper.packetevents.protocol.item.ItemStack replacement = callEvent(
+            com.github.retrooper.packetevents.protocol.item.ItemStack replacement = resolveClientItem(
                     player,
                     wrapper.getStack(),
                     PlayerViewItemEvent.Source.SET_CURSOR_ITEM,
@@ -172,7 +197,7 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
 
         private void handleSetPlayerInventory(PacketSendEvent event, Player player) {
             WrapperPlayServerSetPlayerInventory wrapper = new WrapperPlayServerSetPlayerInventory(event);
-            com.github.retrooper.packetevents.protocol.item.ItemStack replacement = callEvent(
+            com.github.retrooper.packetevents.protocol.item.ItemStack replacement = resolveClientItem(
                     player,
                     wrapper.getStack(),
                     PlayerViewItemEvent.Source.SET_PLAYER_INVENTORY,
@@ -184,6 +209,24 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
             if (replacement == null) return;
             wrapper.setStack(replacement);
             event.markForReEncode(true);
+        }
+
+        private com.github.retrooper.packetevents.protocol.item.ItemStack resolveClientItem(
+                Player player,
+                com.github.retrooper.packetevents.protocol.item.ItemStack packetItem,
+                PlayerViewItemEvent.Source source,
+                int windowId,
+                int slot,
+                int stateId
+        ) {
+            return cache.resolve(
+                    player.getUniqueId(),
+                    source,
+                    windowId,
+                    slot,
+                    packetItem,
+                    item -> callEvent(player, item, source, windowId, slot, stateId)
+            );
         }
 
         private com.github.retrooper.packetevents.protocol.item.ItemStack callEvent(
@@ -220,4 +263,5 @@ public final class PlayerViewItemPacketService implements Enableable, Disableabl
             return itemStack == null || itemStack.getType() == Material.AIR || itemStack.getAmount() <= 0;
         }
     }
+
 }

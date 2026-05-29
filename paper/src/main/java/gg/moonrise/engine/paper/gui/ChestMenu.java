@@ -15,7 +15,6 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.Contract;
 
 import java.util.*;
@@ -147,9 +146,7 @@ public abstract class ChestMenu implements ChestInterface {
             ItemStack stack = button.item(player);
             if (stack == null || stack.getType().isAir()) return;
 
-            stack.editPersistentDataContainer(
-                    data -> data.set(Button.KEY, PersistentDataType.STRING, button.uuid().toString())
-            );
+            MenuInteractionUtil.tagButtonItem(stack, button.uuid());
 
             SafeUtil.setInventoryItem(inventory, slot, stack);
             button.onAddToInventory(inventory);

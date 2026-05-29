@@ -225,28 +225,6 @@ ItemStack stack = ItemBuilder.of(Material.DIAMOND_SWORD)
         .build();
 ```
 
-## Client-side item views
-
-The `paper` module can fire `PlayerViewItemEvent` for item stacks as they are sent to a player's client. Handlers can replace the event item to change the client-side view without changing the server-side inventory item.
-
-This feature requires the PacketEvents plugin to be installed and enabled on the server. If PacketEvents is missing, `plugin-engine` logs a warning during enable and packet-based functionality is skipped; the rest of the library still works.
-
-```java
-@EventHandler
-public void onViewItem(PlayerViewItemEvent event) {
-    ItemStack viewed = event.getItemStack();
-    if (viewed == null) return;
-
-    ItemMeta meta = viewed.getItemMeta();
-    meta.displayName(Component.text("Client-only name"));
-    viewed.setItemMeta(meta);
-
-    event.setItemStack(viewed);
-}
-```
-
-`PlayerViewItemEvent` is packet-send based, not true passive client hover telemetry. PacketEvents may call packet handlers off the primary server thread, so event handlers should check `event.isAsynchronous()` before doing thread-sensitive Bukkit work.
-
 ## Utilities in `common`
 
 - `TimeUtil`: parse/format durations (`1d2h30m`, `H:MM:SS`, etc.)

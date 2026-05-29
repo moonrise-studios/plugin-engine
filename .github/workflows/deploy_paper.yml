@@ -1,14 +1,14 @@
 name: Deploy Paper to Moonrise Nexus (Gradle)
 
 on:
-  workflow_run:
-    workflows:
-      - Deploy Common to Moonrise Nexus (Gradle)
-    types:
-      - completed
+  push:
     branches:
       - release
       - snapshot
+
+permissions:
+  contents: read
+  actions: read
 
 jobs:
   deploy_paper:
@@ -17,8 +17,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -39,13 +37,42 @@ jobs:
           nexusReleasesUrl=https://repo.moonrise.gg/repository/maven-releases
           EOF
 
+      - name: Wait for common deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in {1..60}; do
+            status="$(gh run list \
+              --workflow deploy_common.yml \
+              --branch "${GITHUB_REF_NAME}" \
+              --commit "${GITHUB_SHA}" \
+              --json status \
+              --jq '.[0].status // empty')"
+
+            if [ "${status}" = "completed" ]; then
+              echo "Common deploy completed."
+              exit 0
+            fi
+
+            if [ -n "${status}" ]; then
+              echo "Common deploy status: ${status}. Waiting..."
+            else
+              echo "Common deploy run not found yet. Waiting..."
+            fi
+
+            sleep 10
+          done
+
+          echo "Timed out waiting for common deploy."
+          exit 1
+
       - name: Modify paper version for release
-        if: github.event.workflow_run.head_branch == 'release'
+        if: github.ref == 'refs/heads/release'
         run: |
           sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" paper/build.gradle.kts
 
       - name: Modify paper version for snapshot
-        if: github.event.workflow_run.head_branch == 'snapshot'
+        if: github.ref == 'refs/heads/snapshot'
         run: |
           sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" paper/build.gradle.kts
 
@@ -53,9 +80,9 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build and deploy paper release
-        if: github.event.workflow_run.head_branch == 'release'
+        if: github.ref == 'refs/heads/release'
         run: ./gradlew clean :paper:publish -PisRelease=true
 
       - name: Build and deploy paper snapshot
-        if: github.event.workflow_run.head_branch == 'snapshot'
+        if: github.ref == 'refs/heads/snapshot'
         run: ./gradlew clean :paper:publish -PisRelease=false

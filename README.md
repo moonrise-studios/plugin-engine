@@ -229,6 +229,7 @@ ItemStack stack = ItemBuilder.of(Material.DIAMOND_SWORD)
 
 - `TimeUtil`: parse/format durations (`1d2h30m`, `H:MM:SS`, etc.)
 - `NumberUtil`: decimal formatting, ordinals (`1st`, `2nd`), condensed numbers (`1.2M`)
+- `UuidV7`: UUIDv7 generation, timestamp extraction, and 16-byte UUID encoding helpers
 - `AABB` (paper): simple axis-aligned bounding box representation
 
 ## Build and publish

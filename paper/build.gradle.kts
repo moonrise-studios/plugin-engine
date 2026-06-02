@@ -69,6 +69,10 @@ tasks.shadowJar {
     archiveClassifier.set("")
 }
 
+tasks.named<Jar>("sourcesJar") {
+    from(project(":common").extensions.getByType<SourceSetContainer>().named("main").map { it.allSource })
+}
+
 tasks.test {
     useJUnitPlatform()
 }

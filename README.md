@@ -37,7 +37,7 @@ Then add dependencies:
 ```kotlin
 dependencies {
     implementation("gg.moonrise.engine:plugin-engine-paper:1.1.2")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.1.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.2.2")
 }
 ```
 

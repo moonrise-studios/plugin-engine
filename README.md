@@ -36,8 +36,8 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.1.2")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.1.2")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.2.3")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.2.2")
 }
 ```
 
@@ -61,7 +61,7 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.1.2</version>
+        <version>1.2.3</version>
     </dependency>
 </dependencies>
 ```
@@ -229,6 +229,7 @@ ItemStack stack = ItemBuilder.of(Material.DIAMOND_SWORD)
 
 - `TimeUtil`: parse/format durations (`1d2h30m`, `H:MM:SS`, etc.)
 - `NumberUtil`: decimal formatting, ordinals (`1st`, `2nd`), condensed numbers (`1.2M`)
+- `UuidV7`: UUIDv7 generation, timestamp extraction, and 16-byte UUID encoding helpers
 - `AABB` (paper): simple axis-aligned bounding box representation
 
 ## Build and publish

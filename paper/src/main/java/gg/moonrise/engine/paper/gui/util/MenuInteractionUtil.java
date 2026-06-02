@@ -7,6 +7,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Map;
@@ -33,7 +34,7 @@ public final class MenuInteractionUtil {
         ItemStack current = event.getCurrentItem();
         if (current == null) return;
 
-        String id = current.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING);
+        String id = buttonId(current);
         if (id == null) return;
 
         Button button = buttonById.get(UUID.fromString(id));
@@ -63,9 +64,7 @@ public final class MenuInteractionUtil {
         ItemStack stack = button.item(player);
         if (stack == null || stack.getType().isAir()) return;
 
-        stack.editPersistentDataContainer(
-                data -> data.set(Button.KEY, PersistentDataType.STRING, button.uuid().toString())
-        );
+        tagButtonItem(stack, button.uuid());
 
         SafeUtil.setInventoryItem(inventory, slot, stack);
     }
@@ -90,12 +89,27 @@ public final class MenuInteractionUtil {
         ItemStack item = inventory.getItem(slot);
         if (item == null || item.getType().isAir()) return false;
 
-        String id = item.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING);
+        String id = buttonId(item);
         if (id == null) return false;
 
         Button button = buttonById.get(UUID.fromString(id));
         if (button == null) return false;
 
         return button.cancelClick();
+    }
+
+    public static void tagButtonItem(ItemStack stack, UUID uuid) {
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) return;
+
+        meta.getPersistentDataContainer().set(Button.KEY, PersistentDataType.STRING, uuid.toString());
+        stack.setItemMeta(meta);
+    }
+
+    public static String buttonId(ItemStack stack) {
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) return null;
+
+        return meta.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING);
     }
 }

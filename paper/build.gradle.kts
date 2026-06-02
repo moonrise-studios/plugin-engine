@@ -6,9 +6,10 @@ plugins {
 
 var id = "plugin-engine-paper"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.1.2"
+var apiVersion = "1.2.3"
 
 repositories {
+    maven("https://repo1.maven.org/maven2/")
     mavenCentral()
 }
 
@@ -66,6 +67,10 @@ tasks.shadowJar {
     archiveBaseName.set(id)
     archiveVersion.set(apiVersion)
     archiveClassifier.set("")
+}
+
+tasks.named<Jar>("sourcesJar") {
+    from(project(":common").extensions.getByType<SourceSetContainer>().named("main").map { it.allSource })
 }
 
 tasks.test {

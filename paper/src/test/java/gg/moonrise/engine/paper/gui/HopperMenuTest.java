@@ -4,7 +4,9 @@ import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.support.MockBukkitTest;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
@@ -28,11 +30,16 @@ class HopperMenuTest extends MockBukkitTest {
         menu.addButton(2, button);
         menu.refresh();
 
-        ItemStack rendered = menu.getView().getTopInventory().getItem(2);
+        Inventory inventory = menu.getInventory();
+        assertNotNull(inventory);
+
+        ItemStack rendered = inventory.getItem(2);
         assertNotNull(rendered);
         assertEquals(Material.HOPPER, rendered.getType());
-        assertEquals(button.uuid().toString(), rendered.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING));
-        assertEquals(menu.getView(), button.boundingInventory());
+        ItemMeta meta = rendered.getItemMeta();
+        assertNotNull(meta);
+        assertEquals(button.uuid().toString(), meta.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING));
+        assertEquals(inventory, button.inventory());
         assertEquals(1, menu.getRefreshingButtons().size());
         assertTrue(menu.checkCancelClick(2));
     }

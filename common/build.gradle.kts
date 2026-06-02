@@ -9,6 +9,7 @@ var domain = "gg.moonrise.engine"
 var apiVersion = "1.2.2"
 
 repositories {
+    maven("https://repo1.maven.org/maven2/")
     mavenCentral()
 }
 

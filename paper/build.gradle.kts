@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-paper"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.2.2"
+var apiVersion = "1.2.3"
 
 repositories {
     mavenCentral()

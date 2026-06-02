@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   deploy_paper:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code

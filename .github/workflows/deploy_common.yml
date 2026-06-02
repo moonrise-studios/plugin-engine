@@ -3,8 +3,7 @@ name: Deploy Common to Moonrise Nexus (Gradle)
 on:
   push:
     branches:
-      - release
-      - snapshot
+      - '**'
 
 jobs:
   deploy_common:
@@ -43,6 +42,13 @@ jobs:
         run: |
           sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" common/build.gradle.kts
 
+      - name: Modify common version for experimental
+        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        run: |
+          short_sha="${GITHUB_SHA::7}"
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" common/build.gradle.kts
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-${short_sha}\\\"/" common/build.gradle.kts
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
@@ -53,3 +59,7 @@ jobs:
       - name: Build and deploy common snapshot
         if: github.ref == 'refs/heads/snapshot'
         run: ./gradlew clean :common:publish -PisRelease=false
+
+      - name: Build and deploy common experimental
+        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        run: ./gradlew clean :common:publish -PisRelease=false -PnexusSnapshotsUrl=https://repo.moonrise.gg/repository/experimental

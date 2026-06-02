@@ -3,8 +3,7 @@ name: Deploy Paper to Moonrise Nexus (Gradle)
 on:
   push:
     branches:
-      - release
-      - snapshot
+      - '**'
 
 permissions:
   contents: read
@@ -76,6 +75,13 @@ jobs:
         run: |
           sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" paper/build.gradle.kts
 
+      - name: Modify paper version for experimental
+        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        run: |
+          short_sha="${GITHUB_SHA::7}"
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" paper/build.gradle.kts
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-${short_sha}\\\"/" paper/build.gradle.kts
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
@@ -86,3 +92,7 @@ jobs:
       - name: Build and deploy paper snapshot
         if: github.ref == 'refs/heads/snapshot'
         run: ./gradlew clean :paper:publish -PisRelease=false
+
+      - name: Build and deploy paper experimental
+        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        run: ./gradlew clean :paper:publish -PisRelease=false -PnexusSnapshotsUrl=https://repo.moonrise.gg/repository/experimental

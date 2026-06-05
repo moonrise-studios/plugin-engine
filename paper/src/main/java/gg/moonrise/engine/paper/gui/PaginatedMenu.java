@@ -240,38 +240,23 @@ public abstract class PaginatedMenu implements ChestInterface {
             renderButtonToSlot(slot, button);
         });
 
-        List<Integer> listingSlots = new ArrayList<>(contentSlots);
-        int limit = listingSlots.size();
-
         List<Button> items = pages.get(page - 1);
         if (items == null) items = Collections.emptyList();
 
-        if (items.size() >= limit) {
+        boolean hasNextPage = page < pages.size();
+        boolean hasPreviousPage = page > 1;
+
+        List<Integer> listingSlots = new ArrayList<>(contentSlots);
+        listingSlots.removeAll(buttons.keySet());
+
+        if (hasNextPage) {
             Preconditions.checkNotNull(nextPageButton, "Next Page Button cannot be null.");
-
-            int slot = nextPageButton.getKey();
-            Button button = nextPageButton.getValue();
-
-            renderButtonToSlot(slot, button);
-        } else {
-            if (nextPageButton != null) {
-                int slot = nextPageButton.getKey();
-                SafeUtil.setInventoryItem(inventory, slot, null);
-            }
+            listingSlots.remove(Integer.valueOf(nextPageButton.getKey()));
         }
 
-        if (page > 1) {
+        if (hasPreviousPage) {
             Preconditions.checkNotNull(previousPageButton, "Previous Page Button cannot be null.");
-
-            int slot = previousPageButton.getKey();
-            Button button = previousPageButton.getValue();
-
-            renderButtonToSlot(slot, button);
-        } else {
-            if (previousPageButton != null) {
-                int slot = previousPageButton.getKey();
-                SafeUtil.setInventoryItem(inventory, slot, null);
-            }
+            listingSlots.remove(Integer.valueOf(previousPageButton.getKey()));
         }
 
         refreshingContentButtons.clear();
@@ -285,6 +270,14 @@ public abstract class PaginatedMenu implements ChestInterface {
             refreshButton(available, button);
 
             refreshingContentButtons.put(available, button);
+        }
+
+        if (hasNextPage) {
+            renderButtonToSlot(nextPageButton.getKey(), nextPageButton.getValue());
+        }
+
+        if (hasPreviousPage) {
+            renderButtonToSlot(previousPageButton.getKey(), previousPageButton.getValue());
         }
     }
 

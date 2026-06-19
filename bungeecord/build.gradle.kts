@@ -31,6 +31,7 @@ dependencies {
     // Adventure
     compileOnly("net.kyori:adventure-api:4.26.1")
     compileOnly("net.kyori:adventure-text-minimessage:4.26.1")
+    compileOnly("net.kyori:adventure-platform-bungeecord:4.4.1")
 
     // Spring & Jakarta
     compileOnly("org.springframework:spring-context:6.2.13")

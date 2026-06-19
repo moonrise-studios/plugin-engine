@@ -25,8 +25,8 @@ dependencies {
     compileOnly("org.incendo:cloud-bungee:2.0.0-beta.10")
 
     // Moss
-    compileOnly("gg.moonrise.moss:moss-common:1.2.2")
-    compileOnly("gg.moonrise.moss:moss-bungeecord:1.2.2")
+    compileOnly("gg.moonrise.moss:moss-common:1.3.2")
+    compileOnly("gg.moonrise.moss:moss-bungeecord:1.3.2")
 
     // Adventure
     compileOnly("net.kyori:adventure-api:4.26.1")

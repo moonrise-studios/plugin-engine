@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-common"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.2.2"
+var apiVersion = "1.3.2"
 
 repositories {
     maven("https://repo1.maven.org/maven2/")
@@ -19,7 +19,7 @@ dependencies {
     compileOnly("org.incendo:cloud-core:2.0.0")
 
     // Moss
-    compileOnly("gg.moonrise.moss:moss-common:1.2.2")
+    compileOnly("gg.moonrise.moss:moss-common:1.3.2")
 
     // Adventure
     compileOnly("net.kyori:adventure-api:4.26.1")

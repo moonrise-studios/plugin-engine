@@ -40,7 +40,7 @@ Then add dependencies:
 dependencies {
     implementation("gg.moonrise.engine:plugin-engine-paper:1.2.3")
     // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.2.3")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.2.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.3.2")
 }
 ```
 

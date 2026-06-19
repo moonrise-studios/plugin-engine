@@ -24,8 +24,8 @@ dependencies {
     compileOnly("org.incendo:cloud-paper:2.0.0-beta.10")
 
     // Moss
-    compileOnly("gg.moonrise.moss:moss-common:1.2.2")
-    compileOnly("gg.moonrise.moss:moss-paper:1.2.2")
+    compileOnly("gg.moonrise.moss:moss-common:1.3.2")
+    compileOnly("gg.moonrise.moss:moss-paper:1.3.2")
 
     // PlaceholderAPI
     compileOnly("me.clip:placeholderapi:2.11.7")

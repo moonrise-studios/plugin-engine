@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-bungeecord"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.2.3"
+var apiVersion = "1.3.2"
 
 repositories {
     maven("https://repo1.maven.org/maven2/")

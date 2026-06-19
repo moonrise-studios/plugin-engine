@@ -1,0 +1,98 @@
+name: Deploy Bungee to Moonrise Nexus (Gradle)
+
+on:
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy_bungee:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Configure Gradle / Nexus credentials
+        run: |
+          mkdir -p ~/.gradle
+          cat << 'EOF' > ~/.gradle/gradle.properties
+          nexusUsername=${{ secrets.NEXUS_USERNAME }}
+          nexusPassword=${{ secrets.NEXUS_PASSWORD }}
+          nexusSnapshotsUrl=https://repo.moonrise.gg/repository/maven-snapshots
+          nexusReleasesUrl=https://repo.moonrise.gg/repository/maven-releases
+          EOF
+
+      - name: Wait for common deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in {1..60}; do
+            status="$(gh run list \
+              --workflow deploy_common.yml \
+              --branch "${GITHUB_REF_NAME}" \
+              --commit "${GITHUB_SHA}" \
+              --json status \
+              --jq '.[0].status // empty')"
+
+            if [ "${status}" = "completed" ]; then
+              echo "Common deploy completed."
+              exit 0
+            fi
+
+            if [ -n "${status}" ]; then
+              echo "Common deploy status: ${status}. Waiting..."
+            else
+              echo "Common deploy run not found yet. Waiting..."
+            fi
+
+            sleep 10
+          done
+
+          echo "Timed out waiting for common deploy."
+          exit 1
+
+      - name: Modify bungee version for release
+        if: github.ref == 'refs/heads/release'
+        run: |
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" bungeecord/build.gradle.kts
+
+      - name: Modify bungee version for snapshot
+        if: github.ref == 'refs/heads/snapshot'
+        run: |
+          sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" bungeecord/build.gradle.kts
+
+      - name: Modify bungee version for experimental
+        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        run: |
+          short_sha="${GITHUB_SHA::7}"
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" bungeecord/build.gradle.kts
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-${short_sha}\\\"/" bungeecord/build.gradle.kts
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build and deploy bungee release
+        if: github.ref == 'refs/heads/release'
+        run: ./gradlew clean :bungeecord:publish -PisRelease=true
+
+      - name: Build and deploy bungee snapshot
+        if: github.ref == 'refs/heads/snapshot'
+        run: ./gradlew clean :bungeecord:publish -PisRelease=false
+
+      - name: Build and deploy bungee experimental
+        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        run: ./gradlew clean :bungeecord:publish -PisRelease=false -PnexusSnapshotsUrl=https://repo.moonrise.gg/repository/experimental

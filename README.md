@@ -1,23 +1,25 @@
 # plugin-engine
 
-A Java 21 library for building Minecraft Paper plugins with reusable building blocks for commands, scheduling, GUIs, messaging, configuration, and utility helpers.
+A Java 21 library for building Minecraft Paper and BungeeCord plugins with reusable building blocks for commands, scheduling, GUIs, messaging, configuration, and utility helpers.
 
 Source repo: https://github.com/moonrise-studios/plugin-engine  
 Organization: https://github.com/moonrise-studios
 
 ## What this library provides
 
-`plugin-engine` is split into two modules:
+`plugin-engine` is split into three modules:
 
 | Module | Artifact | Purpose |
 | --- | --- | --- |
 | common | `gg.moonrise.engine:plugin-engine-common` | Platform-agnostic APIs and helpers (configuration, messages, command abstractions, utilities). |
 | paper | `gg.moonrise.engine:plugin-engine-paper` | Paper-specific implementations (plugin base class, schedulers, command registration, GUI framework, item builder, jobs). |
+| bungeecord | `gg.moonrise.engine:plugin-engine-bungeecord` | BungeeCord-specific implementations (plugin base class, listener registration, Cloud command registration). |
 
 ## Compatibility
 
 - Java 21
 - Paper API `1.21.8-R0.1-SNAPSHOT` (for the `paper` module)
+- BungeeCord API `1.21-R0.5-SNAPSHOT` (for the `bungeecord` module)
 
 ## Installation
 
@@ -37,6 +39,7 @@ Then add dependencies:
 ```kotlin
 dependencies {
     implementation("gg.moonrise.engine:plugin-engine-paper:1.2.3")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.2.3")
     // or: implementation("gg.moonrise.engine:plugin-engine-common:1.2.2")
 }
 ```
@@ -63,6 +66,7 @@ dependencies {
         <artifactId>plugin-engine-paper</artifactId>
         <version>1.2.3</version>
     </dependency>
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.2.3 -->
 </dependencies>
 ```
 
@@ -83,7 +87,20 @@ public final class ExamplePlugin extends PaperPlugin {
 
 `PaperPlugin` initializes scheduler and MiniMessage utilities for you and exposes the shared `Plugin` contract (`directory()`, `fetchBeans(...)`).
 
-### 2) Optional: custom library loader
+## Quick start (BungeeCord plugins)
+
+```java
+package com.example;
+
+import gg.moonrise.engine.bungeecord.BungeePlugin;
+
+public final class ExampleProxyPlugin extends BungeePlugin {
+}
+```
+
+`BungeePlugin` initializes MiniMessage utilities, registers BungeeCord listener beans, and exposes the shared `Plugin` contract (`directory()`, `fetchBeans(...)`).
+
+### 2) Optional Paper library loader
 
 If you need extra runtime libraries, extend `PaperPluginLoader`:
 
@@ -110,10 +127,9 @@ public final class ExamplePluginLoader extends PaperPluginLoader {
 ```java
 package com.example.command;
 
-import gg.moonrise.engine.command.CloudCommand;
+import gg.moonrise.engine.paper.command.PaperCommand;
 import gg.moonrise.moss.spring.SpringComponent;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.annotations.Command;
 import org.incendo.cloud.annotations.CommandDescription;
 
@@ -124,6 +140,28 @@ public final class ExampleCommand implements PaperCommand {
     @CommandDescription("Example command")
     public void example(CommandSourceStack source) {
         
+    }
+}
+```
+
+`bungeecord` includes `BungeeCordCommandRegistry`, which uses the same Cloud annotations flow for Spring beans implementing `BungeeCordCommand` and shared `CloudArgument` parsers.
+
+```java
+package com.example.command;
+
+import gg.moonrise.engine.bungeecord.command.BungeeCordCommand;
+import gg.moonrise.moss.spring.SpringComponent;
+import net.md_5.bungee.api.CommandSender;
+import org.incendo.cloud.annotations.Command;
+import org.incendo.cloud.annotations.CommandDescription;
+
+@SpringComponent
+public final class ExampleProxyCommand implements BungeeCordCommand {
+
+    @Command("exampleproxy")
+    @CommandDescription("Example proxy command")
+    public void example(CommandSender sender) {
+
     }
 }
 ```

@@ -45,7 +45,6 @@ public record Message(String content) {
      * Sends the message to the specified recipient, replacing any placeholders if provided.
      * @param recipient the audience to send the message to
      * @param placeholders placeholders to replace in the message
-     * @param <T> the type of the audience
      */
     public void send(@NotNull Object recipient, TagResolver.Single... placeholders) {
         Audience audience = Audiences.audience(recipient);
@@ -75,7 +74,6 @@ public record Message(String content) {
      * Converts the message content into a Component for a specific viewer, replacing any placeholders if provided.
      * @param viewer the audience viewing the message
      * @param placeholders placeholders to replace in the message
-     * @param <T> the type of the audience
      * @return the resulting Component
      */
     public Component asComponent(Object viewer, TagResolver.Single... placeholders) {

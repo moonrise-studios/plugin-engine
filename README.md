@@ -184,6 +184,41 @@ public final class ExampleMenu extends ChestMenu {
 
 Menus are backed by Bukkit `InventoryHolder` instances and handled by `PlayerInventoryController`.
 
+## Dialogs
+
+Paper dialogs can be built with the fluent `Dialogs` wrapper. The wrapper uses Paper's callback-backed `DialogAction`, so no global listener or manual response map is needed for simple player prompts.
+
+```java
+Dialogs.create(player)
+        .title("<green>Profile setup")
+        .body("<gray>Pick the values to apply to your profile.")
+        .input(Dialogs.text("nickname", "<yellow>Nickname")
+                .initial(player.getName())
+                .maxLength(16)
+                .build())
+        .input(Dialogs.numberRange("level", "<aqua>Level", 0f, 100f)
+                .step(1f)
+                .initial(1f)
+                .build())
+        .input(Dialogs.bool("public", "<gold>Public profile")
+                .initial(true)
+                .build())
+        .submitButton("<green>Save", "<gray>Apply these values.", 120)
+        .cancelButton("<red>Cancel")
+        .whenComplete(player, output -> {
+            String nickname = output.requireText("nickname");
+            int level = Math.round(output.requireNumber("level"));
+            boolean isPublic = output.bool("public", false);
+
+            player.sendRichMessage(
+                    "<green>Saved <nickname> at level <level> as <visibility>.",
+                    Placeholder.parsed("nickname", nickname),
+                    Placeholder.parsed("level", String.valueOf(level)),
+                    Placeholder.parsed("visibility", isPublic ? "public" : "private")
+            );
+        });
+```
+
 ## Messages and placeholders
 
 `Message` and `MiniMessageUtil` support MiniMessage formatting plus PlaceholderAPI integration (when present):

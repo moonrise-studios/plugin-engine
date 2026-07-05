@@ -203,7 +203,7 @@ public final class AnnounceJob implements SyncJob {
 
 ## GUI framework
 
-Use `ChestMenu`, `PaginatedMenu`, or `HopperMenu` with `Button`:
+Use `ChestMenu`, `PaginatedMenu`, `ScrollingMenu`, or `HopperMenu` with `Button`:
 
 ```java
 public final class ExampleMenu extends ChestMenu {
@@ -221,6 +221,32 @@ public final class ExampleMenu extends ChestMenu {
 ```
 
 Menus are backed by Bukkit `InventoryHolder` instances and handled by `PlayerInventoryController`.
+
+`ScrollingMenu` renders a fixed viewport over a larger content list. Configure content slots in display order, optionally set the line width, then wire previous/next line buttons that call `previousLine()` and `nextLine()`.
+
+```java
+public final class ExampleScrollMenu extends ScrollingMenu {
+    public ExampleScrollMenu(Player player, List<Button> entries) {
+        super(player, "<green>Entries", 5);
+
+        setContentSlots(List.of(
+                2, 3, 4, 5, 6, 7,
+                11, 12, 13, 14, 15, 16,
+                20, 21, 22, 23, 24, 25
+        ));
+        setLineLength(6);
+        setPreviousLineButton(0, Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Up").build())
+                .action((button, viewer, event) -> previousLine())
+                .build());
+        setNextLineButton(36, Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Down").build())
+                .action((button, viewer, event) -> nextLine())
+                .build());
+        setContent(entries);
+    }
+}
+```
 
 ## Dialogs
 

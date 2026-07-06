@@ -34,10 +34,10 @@ public final class MenuInteractionUtil {
         ItemStack current = event.getCurrentItem();
         if (current == null) return;
 
-        String id = buttonId(current);
+        UUID id = buttonUuid(current);
         if (id == null) return;
 
-        Button button = buttonById.get(UUID.fromString(id));
+        Button button = buttonById.get(id);
         if (button == null) return;
 
         button.processClickAction(player, event);
@@ -60,13 +60,37 @@ public final class MenuInteractionUtil {
         if (inventory == null) return;
         if (inventory.getViewers().isEmpty()) return;
 
-        Player player = (Player) inventory.getViewers().getFirst();
+        for (var viewer : inventory.getViewers()) {
+            if (viewer instanceof Player player) {
+                refreshButton(inventory, slot, button, player);
+                return;
+            }
+        }
+    }
+
+    public static boolean refreshButton(Inventory inventory, int slot, Button button, Player player) {
+        return renderButton(inventory, slot, button, player);
+    }
+
+    public static boolean renderButton(Inventory inventory, int slot, Button button, Player player) {
+        if (inventory == null || button == null || player == null) return false;
+        if (slot < 0 || slot >= inventory.getSize()) {
+            button.onAddToInventory(null);
+            return false;
+        }
+
         ItemStack stack = button.item(player);
-        if (stack == null || stack.getType().isAir()) return;
+        if (stack == null || stack.getType().isAir()) {
+            SafeUtil.setInventoryItem(inventory, slot, null);
+            button.onAddToInventory(null);
+            return false;
+        }
 
         tagButtonItem(stack, button.uuid());
 
         SafeUtil.setInventoryItem(inventory, slot, stack);
+        button.onAddToInventory(inventory, slot);
+        return true;
     }
 
     public static void addButton(
@@ -89,10 +113,10 @@ public final class MenuInteractionUtil {
         ItemStack item = inventory.getItem(slot);
         if (item == null || item.getType().isAir()) return false;
 
-        String id = buttonId(item);
+        UUID id = buttonUuid(item);
         if (id == null) return false;
 
-        Button button = buttonById.get(UUID.fromString(id));
+        Button button = buttonById.get(id);
         if (button == null) return false;
 
         return button.cancelClick();
@@ -111,5 +135,16 @@ public final class MenuInteractionUtil {
         if (meta == null) return null;
 
         return meta.getPersistentDataContainer().get(Button.KEY, PersistentDataType.STRING);
+    }
+
+    public static UUID buttonUuid(ItemStack stack) {
+        String id = buttonId(stack);
+        if (id == null) return null;
+
+        try {
+            return UUID.fromString(id);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 }

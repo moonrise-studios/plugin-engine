@@ -5,7 +5,6 @@ import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.gui.holder.ScrollingMenuHolder;
 import gg.moonrise.engine.paper.gui.util.MenuInteractionUtil;
-import gg.moonrise.engine.paper.gui.util.SafeUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -279,7 +278,7 @@ public abstract class ScrollingMenu implements ChestInterface {
      * @param button The button to refresh
      */
     public void refreshButton(int slot, Button button) {
-        renderButtonToSlot(slot, button);
+        MenuInteractionUtil.refreshButton(inventory, slot, button, player);
     }
 
     /**
@@ -591,13 +590,7 @@ public abstract class ScrollingMenu implements ChestInterface {
             refreshingButtons.put(slot, button);
         }
 
-        ItemStack stack = button.item(player);
-        if (stack == null || stack.getType().isAir()) return;
-
-        MenuInteractionUtil.tagButtonItem(stack, button.uuid());
-
-        SafeUtil.setInventoryItem(inventory, slot, stack);
-        button.onAddToInventory(inventory);
+        MenuInteractionUtil.renderButton(inventory, slot, button, player);
     }
 
     private Inventory createInventory() {

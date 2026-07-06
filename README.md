@@ -203,14 +203,24 @@ public final class AnnounceJob implements SyncJob {
 
 ## GUI framework
 
-Use `ChestMenu`, `PaginatedMenu`, `ScrollingMenu`, or `HopperMenu` with `Button`:
+Use `ChestMenu`, `PaginatedMenu`, `ScrollingMenu`, or `HopperMenu` with `Button`. Prefer `MenuLayout` for new menus so slot structure, decorative fillers, content slots, and navigation buttons stay readable:
 
 ```java
 public final class ExampleMenu extends ChestMenu {
     public ExampleMenu(Player player) {
         super(player, "<green>Example", 3);
 
-        addButton(13, Button.builder()
+        MenuLayout layout = MenuLayout.chest(
+                "# # # # # # # # #",
+                "# . . . . . . . #",
+                "# # # # x # # # #"
+        );
+
+        addButtons(layout, '#', () -> Button.of(ItemBuilder.of(Material.GRAY_STAINED_GLASS_PANE)
+                .name(" ")
+                .build()));
+
+        addButton(layout, 'x', Button.builder()
                 .item(viewer -> ItemBuilder.of(Material.EMERALD)
                         .name("<green>Click me")
                         .build())
@@ -221,6 +231,50 @@ public final class ExampleMenu extends ChestMenu {
 ```
 
 Menus are backed by Bukkit `InventoryHolder` instances and handled by `PlayerInventoryController`.
+
+Paginated menus can use the same layout keys for content and navigation. `setContentUnfiltered(...)` is the preferred large-list path because it does not render every content button up front; legacy `setContent(...)` still keeps eager empty-item filtering for older projects.
+
+```java
+public final class PlayersMenu extends PaginatedMenu {
+    public PlayersMenu(Player player, List<PlayerProfile> profiles) {
+        super(player, "<green>Players", 6);
+
+        MenuLayout layout = MenuLayout.chest(
+                "# # # # # # # # #",
+                "# . . . . . . . #",
+                "# . . . . . . . #",
+                "# . . . . . . . #",
+                "# . . . . . . . #",
+                "# # # < # > # # #"
+        );
+
+        addButtons(layout, '#', () -> Button.of(ItemBuilder.of(Material.BLACK_STAINED_GLASS_PANE)
+                .name(" ")
+                .build()));
+
+        setContentSlots(layout, '.');
+        setPreviousPageButton(layout, '<', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW)
+                        .name(hasPreviousPage() ? "<yellow>Previous page" : "<dark_gray>Previous page")
+                        .build())
+                .action((button, viewer, event) -> previousPage())
+                .build());
+        setNextPageButton(layout, '>', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW)
+                        .name(hasNextPage() ? "<yellow>Next page" : "<dark_gray>Next page")
+                        .build())
+                .action((button, viewer, event) -> nextPage())
+                .build());
+
+        setContentUnfiltered(generateButtons(profiles, profile -> Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.PLAYER_HEAD)
+                        .name("<green>" + profile.name())
+                        .build())
+                .action((button, viewer, event) -> openProfile(profile))
+                .build()));
+    }
+}
+```
 
 `ScrollingMenu` renders a fixed viewport over a larger content list. Configure content slots in display order, optionally set the line width, then wire previous/next line buttons that call `previousLine()` and `nextLine()`.
 
@@ -247,6 +301,8 @@ public final class ExampleScrollMenu extends ScrollingMenu {
     }
 }
 ```
+
+For dynamic items, either set `Button.builder().refresh(ticks)` and let the controller refresh it while open, or call `button.notifyInventory(player)` after changing the backing state. Direct slot APIs such as `addButton(13, button)` and `setContent(...)` remain supported.
 
 ## Dialogs
 

@@ -1,23 +1,25 @@
 # plugin-engine
 
-A Java 21 library for building Minecraft Paper plugins with reusable building blocks for commands, scheduling, GUIs, messaging, configuration, and utility helpers.
+A Java 21 library for building Minecraft Paper and BungeeCord plugins with reusable building blocks for commands, scheduling, GUIs, messaging, configuration, and utility helpers.
 
 Source repo: https://github.com/moonrise-studios/plugin-engine  
 Organization: https://github.com/moonrise-studios
 
 ## What this library provides
 
-`plugin-engine` is split into two modules:
+`plugin-engine` is split into three modules:
 
 | Module | Artifact | Purpose |
 | --- | --- | --- |
 | common | `gg.moonrise.engine:plugin-engine-common` | Platform-agnostic APIs and helpers (configuration, messages, command abstractions, utilities). |
 | paper | `gg.moonrise.engine:plugin-engine-paper` | Paper-specific implementations (plugin base class, schedulers, command registration, GUI framework, item builder, jobs). |
+| bungeecord | `gg.moonrise.engine:plugin-engine-bungeecord` | BungeeCord-specific implementations (plugin base class, listener registration, Cloud command registration). |
 
 ## Compatibility
 
 - Java 21
 - Paper API `1.21.8-R0.1-SNAPSHOT` (for the `paper` module)
+- BungeeCord API `1.21-R0.5-SNAPSHOT` (for the `bungeecord` module)
 
 ## Installation
 
@@ -36,8 +38,9 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.2.3")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.2.2")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.3.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.3.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.3.2")
 }
 ```
 
@@ -61,8 +64,9 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.2.3</version>
+        <version>1.3.2</version>
     </dependency>
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.3.2 -->
 </dependencies>
 ```
 
@@ -83,7 +87,20 @@ public final class ExamplePlugin extends PaperPlugin {
 
 `PaperPlugin` initializes scheduler and MiniMessage utilities for you and exposes the shared `Plugin` contract (`directory()`, `fetchBeans(...)`).
 
-### 2) Optional: custom library loader
+## Quick start (BungeeCord plugins)
+
+```java
+package com.example;
+
+import gg.moonrise.engine.bungeecord.BungeePlugin;
+
+public final class ExampleProxyPlugin extends BungeePlugin {
+}
+```
+
+`BungeePlugin` initializes MiniMessage utilities, registers BungeeCord listener beans, and exposes the shared `Plugin` contract (`directory()`, `fetchBeans(...)`).
+
+### 2) Optional Paper library loader
 
 If you need extra runtime libraries, extend `PaperPluginLoader`:
 
@@ -110,10 +127,9 @@ public final class ExamplePluginLoader extends PaperPluginLoader {
 ```java
 package com.example.command;
 
-import gg.moonrise.engine.command.CloudCommand;
+import gg.moonrise.engine.paper.command.PaperCommand;
 import gg.moonrise.moss.spring.SpringComponent;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.annotations.Command;
 import org.incendo.cloud.annotations.CommandDescription;
 
@@ -124,6 +140,28 @@ public final class ExampleCommand implements PaperCommand {
     @CommandDescription("Example command")
     public void example(CommandSourceStack source) {
         
+    }
+}
+```
+
+`bungeecord` includes `BungeeCordCommandRegistry`, which uses the same Cloud annotations flow for Spring beans implementing `BungeeCordCommand` and shared `CloudArgument` parsers.
+
+```java
+package com.example.command;
+
+import gg.moonrise.engine.bungeecord.command.BungeeCordCommand;
+import gg.moonrise.moss.spring.SpringComponent;
+import net.md_5.bungee.api.CommandSender;
+import org.incendo.cloud.annotations.Command;
+import org.incendo.cloud.annotations.CommandDescription;
+
+@SpringComponent
+public final class ExampleProxyCommand implements BungeeCordCommand {
+
+    @Command("exampleproxy")
+    @CommandDescription("Example proxy command")
+    public void example(CommandSender sender) {
+
     }
 }
 ```
@@ -165,14 +203,24 @@ public final class AnnounceJob implements SyncJob {
 
 ## GUI framework
 
-Use `ChestMenu`, `PaginatedMenu`, or `HopperMenu` with `Button`:
+Use `ChestMenu`, `PaginatedMenu`, `ScrollingMenu`, or `HopperMenu` with `Button`. Prefer `MenuLayout` for new menus so slot structure, decorative fillers, content slots, and navigation buttons stay readable:
 
 ```java
 public final class ExampleMenu extends ChestMenu {
     public ExampleMenu(Player player) {
         super(player, "<green>Example", 3);
 
-        addButton(13, Button.builder()
+        MenuLayout layout = MenuLayout.chest(
+                "# # # # # # # # #",
+                "# . . . . . . . #",
+                "# # # # x # # # #"
+        );
+
+        addButtons(layout, '#', () -> Button.of(ItemBuilder.of(Material.GRAY_STAINED_GLASS_PANE)
+                .name(" ")
+                .build()));
+
+        addButton(layout, 'x', Button.builder()
                 .item(viewer -> ItemBuilder.of(Material.EMERALD)
                         .name("<green>Click me")
                         .build())
@@ -183,6 +231,113 @@ public final class ExampleMenu extends ChestMenu {
 ```
 
 Menus are backed by Bukkit `InventoryHolder` instances and handled by `PlayerInventoryController`.
+
+Paginated menus can use the same layout keys for content and navigation. `setContentUnfiltered(...)` is the preferred large-list path because it does not render every content button up front; legacy `setContent(...)` still keeps eager empty-item filtering for older projects.
+
+```java
+public final class PlayersMenu extends PaginatedMenu {
+    public PlayersMenu(Player player, List<PlayerProfile> profiles) {
+        super(player, "<green>Players", 6);
+
+        MenuLayout layout = MenuLayout.chest(
+                "# # # # # # # # #",
+                "# . . . . . . . #",
+                "# . . . . . . . #",
+                "# . . . . . . . #",
+                "# . . . . . . . #",
+                "# # # < # > # # #"
+        );
+
+        addButtons(layout, '#', () -> Button.of(ItemBuilder.of(Material.BLACK_STAINED_GLASS_PANE)
+                .name(" ")
+                .build()));
+
+        setContentSlots(layout, '.');
+        setPreviousPageButton(layout, '<', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW)
+                        .name(hasPreviousPage() ? "<yellow>Previous page" : "<dark_gray>Previous page")
+                        .build())
+                .action((button, viewer, event) -> previousPage())
+                .build());
+        setNextPageButton(layout, '>', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW)
+                        .name(hasNextPage() ? "<yellow>Next page" : "<dark_gray>Next page")
+                        .build())
+                .action((button, viewer, event) -> nextPage())
+                .build());
+
+        setContentUnfiltered(generateButtons(profiles, profile -> Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.PLAYER_HEAD)
+                        .name("<green>" + profile.name())
+                        .build())
+                .action((button, viewer, event) -> openProfile(profile))
+                .build()));
+    }
+}
+```
+
+`ScrollingMenu` renders a fixed viewport over a larger content list. Configure content slots in display order, optionally set the line width, then wire previous/next line buttons that call `previousLine()` and `nextLine()`.
+
+```java
+public final class ExampleScrollMenu extends ScrollingMenu {
+    public ExampleScrollMenu(Player player, List<Button> entries) {
+        super(player, "<green>Entries", 5);
+
+        setContentSlots(List.of(
+                2, 3, 4, 5, 6, 7,
+                11, 12, 13, 14, 15, 16,
+                20, 21, 22, 23, 24, 25
+        ));
+        setLineLength(6);
+        setPreviousLineButton(0, Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Up").build())
+                .action((button, viewer, event) -> previousLine())
+                .build());
+        setNextLineButton(36, Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Down").build())
+                .action((button, viewer, event) -> nextLine())
+                .build());
+        setContent(entries);
+    }
+}
+```
+
+For dynamic items, either set `Button.builder().refresh(ticks)` and let the controller refresh it while open, or call `button.notifyInventory(player)` after changing the backing state. Direct slot APIs such as `addButton(13, button)` and `setContent(...)` remain supported.
+
+## Dialogs
+
+Paper dialogs can be built with the fluent `Dialogs` wrapper. The wrapper uses Paper's callback-backed `DialogAction`, so no global listener or manual response map is needed for simple player prompts.
+
+```java
+Dialogs.create(player)
+        .title("<green>Profile setup")
+        .body("<gray>Pick the values to apply to your profile.")
+        .input(Dialogs.text("nickname", "<yellow>Nickname")
+                .initial(player.getName())
+                .maxLength(16)
+                .build())
+        .input(Dialogs.numberRange("level", "<aqua>Level", 0f, 100f)
+                .step(1f)
+                .initial(1f)
+                .build())
+        .input(Dialogs.bool("public", "<gold>Public profile")
+                .initial(true)
+                .build())
+        .submitButton("<green>Save", "<gray>Apply these values.", 120)
+        .cancelButton("<red>Cancel")
+        .whenComplete(player, output -> {
+            String nickname = output.requireText("nickname");
+            int level = Math.round(output.requireNumber("level"));
+            boolean isPublic = output.bool("public", false);
+
+            player.sendRichMessage(
+                    "<green>Saved <nickname> at level <level> as <visibility>.",
+                    Placeholder.parsed("nickname", nickname),
+                    Placeholder.parsed("level", String.valueOf(level)),
+                    Placeholder.parsed("visibility", isPublic ? "public" : "private")
+            );
+        });
+```
 
 ## Messages and placeholders
 

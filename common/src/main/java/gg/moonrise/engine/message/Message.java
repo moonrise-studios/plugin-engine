@@ -45,6 +45,16 @@ public record Message(String content) {
      * Sends the message to the specified recipient, replacing any placeholders if provided.
      * @param recipient the audience to send the message to
      * @param placeholders placeholders to replace in the message
+     */
+    public void send(@NotNull Object recipient, TagResolver.Single... placeholders) {
+        Audience audience = Audiences.audience(recipient);
+        send(audience, placeholders);
+    }
+
+    /**
+     * Sends the message to the specified recipient, replacing any placeholders if provided.
+     * @param recipient the audience to send the message to
+     * @param placeholders placeholders to replace in the message
      * @param <T> the type of the audience
      */
     public <T extends Audience> void send(@NotNull T recipient, TagResolver.Single... placeholders) {
@@ -58,6 +68,17 @@ public record Message(String content) {
      */
     public Component asComponent(TagResolver.Single... placeholders) {
         return asComponent(null, placeholders);
+    }
+
+    /**
+     * Converts the message content into a Component for a specific viewer, replacing any placeholders if provided.
+     * @param viewer the audience viewing the message
+     * @param placeholders placeholders to replace in the message
+     * @return the resulting Component
+     */
+    public Component asComponent(Object viewer, TagResolver.Single... placeholders) {
+        Audience audience = Audiences.audience(viewer);
+        return MiniMessageUtil.fromText(audience, content, placeholders);
     }
 
     /**

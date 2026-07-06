@@ -4,8 +4,9 @@ import com.google.common.base.Preconditions;
 import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.gui.holder.PaginatedMenuHolder;
+import gg.moonrise.engine.paper.gui.layout.ContentSlotOrder;
+import gg.moonrise.engine.paper.gui.layout.MenuLayout;
 import gg.moonrise.engine.paper.gui.util.MenuInteractionUtil;
-import gg.moonrise.engine.paper.gui.util.SafeUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -20,6 +21,8 @@ import org.jetbrains.annotations.Contract;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 /**
  * Represents a chest-based GUI menu for players.
@@ -104,6 +107,27 @@ public abstract class PaginatedMenu implements ChestInterface {
     }
 
     /**
+     * Set content slots from a layout key in horizontal order.
+     * @param layout The layout to read
+     * @param key The content key
+     */
+    public void setContentSlots(MenuLayout layout, char key) {
+        setContentSlots(layout, key, ContentSlotOrder.HORIZONTAL);
+    }
+
+    /**
+     * Set content slots from a layout key in the requested order.
+     * @param layout The layout to read
+     * @param key The content key
+     * @param order The content slot order
+     */
+    public void setContentSlots(MenuLayout layout, char key, ContentSlotOrder order) {
+        Objects.requireNonNull(layout, "layout");
+        Objects.requireNonNull(order, "order");
+        setContentSlots(layout.slots(key, order));
+    }
+
+    /**
      * Set the content slots for the paginated menu from a list of strings
      * @param slotStrings The list of slot strings to set as content slots
      */
@@ -158,8 +182,19 @@ public abstract class PaginatedMenu implements ChestInterface {
      * @param button The button to set
      */
     protected void setNextPageButton(int slot, Button button) {
+        if (nextPageButton != null) buttonById.remove(nextPageButton.getValue().uuid());
         nextPageButton = Map.entry(slot, button);
         buttonById.put(button.uuid(), button);
+    }
+
+    /**
+     * Set the next page button using the first slot matching a layout key.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param button The button to set
+     */
+    public void setNextPageButton(MenuLayout layout, char key, Button button) {
+        setNextPageButton(layout.firstSlot(key), button);
     }
 
     /**
@@ -168,8 +203,19 @@ public abstract class PaginatedMenu implements ChestInterface {
      * @param button The button to set
      */
     protected void setPreviousPageButton(int slot, Button button) {
+        if (previousPageButton != null) buttonById.remove(previousPageButton.getValue().uuid());
         previousPageButton = Map.entry(slot, button);
         buttonById.put(button.uuid(), button);
+    }
+
+    /**
+     * Set the previous page button using the first slot matching a layout key.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param button The button to set
+     */
+    public void setPreviousPageButton(MenuLayout layout, char key, Button button) {
+        setPreviousPageButton(layout.firstSlot(key), button);
     }
 
     /**
@@ -240,38 +286,23 @@ public abstract class PaginatedMenu implements ChestInterface {
             renderButtonToSlot(slot, button);
         });
 
-        List<Integer> listingSlots = new ArrayList<>(contentSlots);
-        int limit = listingSlots.size();
-
         List<Button> items = pages.get(page - 1);
         if (items == null) items = Collections.emptyList();
 
-        if (items.size() >= limit) {
+        boolean hasNextPage = page < pages.size();
+        boolean hasPreviousPage = page > 1;
+
+        List<Integer> listingSlots = new ArrayList<>(contentSlots);
+        listingSlots.removeAll(buttons.keySet());
+
+        if (hasNextPage) {
             Preconditions.checkNotNull(nextPageButton, "Next Page Button cannot be null.");
-
-            int slot = nextPageButton.getKey();
-            Button button = nextPageButton.getValue();
-
-            renderButtonToSlot(slot, button);
-        } else {
-            if (nextPageButton != null) {
-                int slot = nextPageButton.getKey();
-                SafeUtil.setInventoryItem(inventory, slot, null);
-            }
+            listingSlots.remove(Integer.valueOf(nextPageButton.getKey()));
         }
 
-        if (page > 1) {
+        if (hasPreviousPage) {
             Preconditions.checkNotNull(previousPageButton, "Previous Page Button cannot be null.");
-
-            int slot = previousPageButton.getKey();
-            Button button = previousPageButton.getValue();
-
-            renderButtonToSlot(slot, button);
-        } else {
-            if (previousPageButton != null) {
-                int slot = previousPageButton.getKey();
-                SafeUtil.setInventoryItem(inventory, slot, null);
-            }
+            listingSlots.remove(Integer.valueOf(previousPageButton.getKey()));
         }
 
         refreshingContentButtons.clear();
@@ -284,7 +315,17 @@ public abstract class PaginatedMenu implements ChestInterface {
 
             refreshButton(available, button);
 
-            refreshingContentButtons.put(available, button);
+            if (button.refreshIntervalTicks() > 0L) {
+                refreshingContentButtons.put(available, button);
+            }
+        }
+
+        if (hasNextPage) {
+            renderButtonToSlot(nextPageButton.getKey(), nextPageButton.getValue());
+        }
+
+        if (hasPreviousPage) {
+            renderButtonToSlot(previousPageButton.getKey(), previousPageButton.getValue());
         }
     }
 
@@ -310,7 +351,7 @@ public abstract class PaginatedMenu implements ChestInterface {
      * @param button The button to refresh
      */
     public void refreshButton(int slot, Button button) {
-        renderButtonToSlot(slot, button);
+        MenuInteractionUtil.refreshButton(inventory, slot, button, player);
     }
 
     /**
@@ -325,6 +366,43 @@ public abstract class PaginatedMenu implements ChestInterface {
         );
 
         MenuInteractionUtil.addButton(slot, button, buttons, buttonById, refreshingButtons);
+    }
+
+    /**
+     * Add a button to the first slot matching a layout key.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param button The button to add
+     */
+    public void addButton(MenuLayout layout, char key, Button button) {
+        addButton(layout.firstSlot(key), button);
+    }
+
+    /**
+     * Fill every slot matching a layout key with newly-created buttons.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param buttonSupplier The button supplier
+     */
+    public void addButtons(MenuLayout layout, char key, Supplier<Button> buttonSupplier) {
+        Objects.requireNonNull(buttonSupplier, "buttonSupplier");
+        addButtons(layout, key, slot -> buttonSupplier.get());
+    }
+
+    /**
+     * Fill every slot matching a layout key with newly-created buttons.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param buttonFactory The button factory
+     */
+    public void addButtons(MenuLayout layout, char key, IntFunction<Button> buttonFactory) {
+        Objects.requireNonNull(layout, "layout");
+        Objects.requireNonNull(buttonFactory, "buttonFactory");
+
+        for (int slot : layout.slots(key)) {
+            Button button = Objects.requireNonNull(buttonFactory.apply(slot), "buttonFactory returned null");
+            addButton(slot, button);
+        }
     }
 
     /**
@@ -419,6 +497,24 @@ public abstract class PaginatedMenu implements ChestInterface {
      * @param buttons The collection of buttons to set as content
      */
     public void setContent(Collection<Button> buttons) {
+        setContent(buttons, true);
+    }
+
+    /**
+     * Set content without eagerly rendering every button to filter empty items.
+     * This is preferred for large or dynamic content lists.
+     * @param buttons The collection of buttons to set as content
+     */
+    public void setContentUnfiltered(Collection<Button> buttons) {
+        setContent(buttons, false);
+    }
+
+    /**
+     * Set the content of the paginated menu using a collection of buttons.
+     * @param buttons The collection of buttons to set as content
+     * @param filterEmptyItems true to preserve legacy eager empty-item filtering
+     */
+    public void setContent(Collection<Button> buttons, boolean filterEmptyItems) {
         List<Integer> listingSlots = new ArrayList<>(contentSlots);
         int limit = listingSlots.size();
 
@@ -427,18 +523,23 @@ public abstract class PaginatedMenu implements ChestInterface {
 
         List<Button> items = new ArrayList<>();
         for (Button button : buttons) {
-            ItemStack itemStack = button.item(player);
-            if (itemStack == null || itemStack.getType().isAir()) continue;
+            if (button == null) continue;
+            if (filterEmptyItems) {
+                ItemStack itemStack = button.item(player);
+                if (itemStack == null || itemStack.getType().isAir()) continue;
+            }
             items.add(button);
         }
 
         int pageIndex = 0;
         for (int i = 0; i < items.size(); i += limit) {
-            List<Button> pageItems = items.subList(i, Math.min(i + limit, items.size()));
+            List<Button> pageItems = new ArrayList<>(items.subList(i, Math.min(i + limit, items.size())));
             pages.put(pageIndex++, pageItems);
         }
 
-        buttons.forEach(button -> buttonById.put(button.uuid(), button));
+        buttons.stream()
+                .filter(Objects::nonNull)
+                .forEach(button -> buttonById.put(button.uuid(), button));
     }
 
     /**
@@ -449,6 +550,56 @@ public abstract class PaginatedMenu implements ChestInterface {
         int maxPage = Math.max(1, pages.size());
         this.page = Math.max(1, Math.min(page, maxPage));
         refresh();
+    }
+
+    /**
+     * Move to the next page if one exists.
+     */
+    public void nextPage() {
+        changePage(page + 1);
+    }
+
+    /**
+     * Move to the previous page if one exists.
+     */
+    public void previousPage() {
+        changePage(page - 1);
+    }
+
+    /**
+     * Get the current page number.
+     * @return the current one-based page number
+     */
+    @Contract(pure = true)
+    public int getPage() {
+        return page;
+    }
+
+    /**
+     * Get the total page count.
+     * @return the page count
+     */
+    @Contract(pure = true)
+    public int getPageCount() {
+        return Math.max(1, pages.size());
+    }
+
+    /**
+     * Check whether another page exists after the current page.
+     * @return true if a next page exists
+     */
+    @Contract(pure = true)
+    public boolean hasNextPage() {
+        return page < pages.size();
+    }
+
+    /**
+     * Check whether another page exists before the current page.
+     * @return true if a previous page exists
+     */
+    @Contract(pure = true)
+    public boolean hasPreviousPage() {
+        return page > 1;
     }
 
     /**
@@ -506,13 +657,8 @@ public abstract class PaginatedMenu implements ChestInterface {
      * @param button The button to render
      */
     private void renderButtonToSlot(int slot, Button button) {
-        ItemStack stack = button.item(player);
-        if (stack == null || stack.getType().isAir()) return;
-
-        MenuInteractionUtil.tagButtonItem(stack, button.uuid());
-
-        SafeUtil.setInventoryItem(inventory, slot, stack);
-        button.onAddToInventory(inventory);
+        buttonById.put(button.uuid(), button);
+        MenuInteractionUtil.renderButton(inventory, slot, button, player);
     }
 
     private Inventory createInventory() {

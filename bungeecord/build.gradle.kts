@@ -4,35 +4,41 @@ plugins {
     id("com.gradleup.shadow") version("9.2.2")
 }
 
-var id = "plugin-engine-paper"
+var id = "plugin-engine-bungeecord"
 var domain = "gg.moonrise.engine"
 var apiVersion = "1.3.2"
 
 repositories {
     maven("https://repo1.maven.org/maven2/")
     mavenCentral()
+    maven("https://oss.sonatype.org/content/repositories/snapshots/")
 }
 
 dependencies {
     implementation(project(":common"))
 
-    // Paper
-    compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
+    // BungeeCord
+    compileOnly("net.md-5:bungeecord-api:1.21-R0.5-SNAPSHOT")
 
     // Cloud Command Framework
     compileOnly("org.incendo:cloud-annotations:2.0.0")
-    compileOnly("org.incendo:cloud-paper:2.0.0-beta.10")
+    compileOnly("org.incendo:cloud-bungee:2.0.0-beta.10")
 
     // Moss
     compileOnly("gg.moonrise.moss:moss-common:1.2.2")
-    compileOnly("gg.moonrise.moss:moss-paper:1.2.2")
+    compileOnly("gg.moonrise.moss:moss-bungeecord:1.2.2")
 
-    // PlaceholderAPI
-    compileOnly("me.clip:placeholderapi:2.11.7")
+    // Adventure
+    compileOnly("net.kyori:adventure-api:4.26.1")
+    compileOnly("net.kyori:adventure-text-minimessage:4.26.1")
+    compileOnly("net.kyori:adventure-platform-bungeecord:4.4.1")
 
     // Spring & Jakarta
     compileOnly("org.springframework:spring-context:6.2.13")
     compileOnly("jakarta.annotation:jakarta.annotation-api:3.0.0")
+
+    // Logging
+    compileOnly("org.slf4j:slf4j-api:2.0.17")
 
     // ConfigLib
     compileOnly("de.exlll:configlib-yaml:4.8.1")
@@ -44,9 +50,6 @@ dependencies {
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.12.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.76.1")
-    testImplementation("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
-    testImplementation("net.kyori:adventure-text-serializer-plain:4.26.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

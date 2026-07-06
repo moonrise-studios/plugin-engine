@@ -1,4 +1,4 @@
-name: Deploy Paper to Moonrise Nexus (Gradle)
+name: Deploy Bungee to Moonrise Nexus (Gradle)
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
   actions: read
 
 jobs:
-  deploy_paper:
+  deploy_bungee:
     runs-on: self-hosted
 
     steps:
@@ -34,34 +34,34 @@ jobs:
           nexusReleasesUrl=https://repo.moonrise.gg/repository/maven-releases
           EOF
 
-      - name: Modify paper version for release
+      - name: Modify bungee version for release
         if: github.ref == 'refs/heads/release'
         run: |
-          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" paper/build.gradle.kts
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" bungeecord/build.gradle.kts
 
-      - name: Modify paper version for snapshot
+      - name: Modify bungee version for snapshot
         if: github.ref == 'refs/heads/snapshot'
         run: |
-          sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" paper/build.gradle.kts
+          sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" bungeecord/build.gradle.kts
 
-      - name: Modify paper version for experimental
+      - name: Modify bungee version for experimental
         if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
         run: |
           short_sha="${GITHUB_SHA::7}"
-          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" paper/build.gradle.kts
-          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-${short_sha}\\\"/" paper/build.gradle.kts
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" bungeecord/build.gradle.kts
+          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-${short_sha}\\\"/" bungeecord/build.gradle.kts
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build and deploy paper release
+      - name: Build and deploy bungee release
         if: github.ref == 'refs/heads/release'
-        run: ./gradlew clean :paper:publish -PisRelease=true
+        run: ./gradlew clean :bungeecord:publish -PisRelease=true
 
-      - name: Build and deploy paper snapshot
+      - name: Build and deploy bungee snapshot
         if: github.ref == 'refs/heads/snapshot'
-        run: ./gradlew clean :paper:publish -PisRelease=false
+        run: ./gradlew clean :bungeecord:publish -PisRelease=false
 
-      - name: Build and deploy paper experimental
+      - name: Build and deploy bungee experimental
         if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
-        run: ./gradlew clean :paper:publish -PisRelease=false -PnexusSnapshotsUrl=https://repo.moonrise.gg/repository/experimental
+        run: ./gradlew clean :bungeecord:publish -PisRelease=false -PnexusSnapshotsUrl=https://repo.moonrise.gg/repository/experimental

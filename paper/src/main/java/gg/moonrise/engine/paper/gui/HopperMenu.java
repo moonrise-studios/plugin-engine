@@ -3,8 +3,8 @@ package gg.moonrise.engine.paper.gui;
 import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.gui.holder.HopperMenuHolder;
+import gg.moonrise.engine.paper.gui.layout.MenuLayout;
 import gg.moonrise.engine.paper.gui.util.MenuInteractionUtil;
-import gg.moonrise.engine.paper.gui.util.SafeUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -14,10 +14,11 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 
 import java.util.*;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 /**
  * Represents a chest-based GUI menu for players.
@@ -126,14 +127,7 @@ public abstract class HopperMenu implements UserInterface {
 
         buttons.forEach((slot, button) -> {
             button.onAddToInventory(null);
-
-            ItemStack stack = button.item(player);
-            if (stack == null || stack.getType().isAir()) return;
-
-            MenuInteractionUtil.tagButtonItem(stack, button.uuid());
-
-            SafeUtil.setInventoryItem(inventory, slot, stack);
-            button.onAddToInventory(inventory);
+            MenuInteractionUtil.renderButton(inventory, slot, button, player);
         });
     }
 
@@ -151,7 +145,7 @@ public abstract class HopperMenu implements UserInterface {
      * @param button The button to refresh
      */
     public void refreshButton(int slot, Button button) {
-        MenuInteractionUtil.refreshButton(inventory, slot, button);
+        MenuInteractionUtil.refreshButton(inventory, slot, button, player);
     }
 
     /**
@@ -161,6 +155,43 @@ public abstract class HopperMenu implements UserInterface {
      */
     public void addButton(int slot, Button button) {
         MenuInteractionUtil.addButton(slot, button, buttons, buttonById, refreshingButtons);
+    }
+
+    /**
+     * Add a button to the first slot matching a layout key.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param button The button to add
+     */
+    public void addButton(MenuLayout layout, char key, Button button) {
+        addButton(layout.firstSlot(key), button);
+    }
+
+    /**
+     * Fill every slot matching a layout key with newly-created buttons.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param buttonSupplier The button supplier
+     */
+    public void addButtons(MenuLayout layout, char key, Supplier<Button> buttonSupplier) {
+        Objects.requireNonNull(buttonSupplier, "buttonSupplier");
+        addButtons(layout, key, slot -> buttonSupplier.get());
+    }
+
+    /**
+     * Fill every slot matching a layout key with newly-created buttons.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param buttonFactory The button factory
+     */
+    public void addButtons(MenuLayout layout, char key, IntFunction<Button> buttonFactory) {
+        Objects.requireNonNull(layout, "layout");
+        Objects.requireNonNull(buttonFactory, "buttonFactory");
+
+        for (int slot : layout.slots(key)) {
+            Button button = Objects.requireNonNull(buttonFactory.apply(slot), "buttonFactory returned null");
+            addButton(slot, button);
+        }
     }
 
     /**

@@ -110,6 +110,34 @@ class StaticScrollingMenuTest extends MockBukkitTest {
     }
 
     @Test
+    void fallbackSymbolsRenderWhenScrollControlsAreHidden() {
+        PlayerMock player = server.addPlayer();
+        TestStaticScrollingMenu menu = new TestStaticScrollingMenu(player, 6);
+
+        menu.layout(SAMPLE_LAYOUT);
+        menu.staticLines(0, 11);
+        menu.button('#', button(Material.GRAY_STAINED_GLASS_PANE));
+        menu.button('i', button(Material.BOOK));
+        menu.button('.', button(Material.DIAMOND));
+        menu.button('a', button(Material.GOLD_INGOT));
+        menu.button('b', button(Material.LAPIS_LAZULI));
+        menu.button('x', button(Material.BARRIER));
+        menu.previousLineButton('u', '#', button(Material.REDSTONE));
+        menu.nextLineButton('d', '#', button(Material.ARROW));
+
+        menu.refresh();
+
+        Inventory inventory = menu.getInventory();
+        assertItem(inventory, 47, Material.GRAY_STAINED_GLASS_PANE);
+        assertItem(inventory, 51, Material.ARROW);
+
+        menu.changeLine(6);
+
+        assertItem(inventory, 47, Material.REDSTONE);
+        assertItem(inventory, 51, Material.GRAY_STAINED_GLASS_PANE);
+    }
+
+    @Test
     void compactLayoutLinesAreSupported() {
         PlayerMock player = server.addPlayer();
         TestStaticScrollingMenu menu = new TestStaticScrollingMenu(player, 3);
@@ -180,8 +208,16 @@ class StaticScrollingMenuTest extends MockBukkitTest {
             setNextLineButton(symbol, button);
         }
 
+        private void nextLineButton(char symbol, char fallbackSymbol, Button button) {
+            setNextLineButton(symbol, fallbackSymbol, button);
+        }
+
         private void previousLineButton(char symbol, Button button) {
             setPreviousLineButton(symbol, button);
+        }
+
+        private void previousLineButton(char symbol, char fallbackSymbol, Button button) {
+            setPreviousLineButton(symbol, fallbackSymbol, button);
         }
     }
 }

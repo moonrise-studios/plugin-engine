@@ -5,7 +5,6 @@ import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.gui.holder.StaticScrollingMenuHolder;
 import gg.moonrise.engine.paper.gui.util.MenuInteractionUtil;
-import gg.moonrise.engine.paper.gui.util.SafeUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -14,7 +13,6 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 
 import java.util.*;
@@ -43,6 +41,8 @@ public abstract class StaticScrollingMenu implements ChestInterface {
 
     private Map.Entry<String, Button> nextLineButton;
     private Map.Entry<String, Button> previousLineButton;
+    private String nextLineFallbackSymbol;
+    private String previousLineFallbackSymbol;
 
     protected Inventory inventory;
     private boolean cancelClicks = true;
@@ -175,11 +175,35 @@ public abstract class StaticScrollingMenu implements ChestInterface {
 
     /**
      * Set the next-line button rendered for a layout symbol when a next line exists.
+     * When hidden, the slot renders the button for the fallback layout symbol.
+     * @param symbol The layout symbol
+     * @param fallbackSymbol The fallback layout symbol
+     * @param button The button to render
+     */
+    protected void setNextLineButton(String symbol, String fallbackSymbol, Button button) {
+        setNextLineButton(symbol, button);
+        checkSymbol(fallbackSymbol);
+        nextLineFallbackSymbol = fallbackSymbol;
+    }
+
+    /**
+     * Set the next-line button rendered for a layout symbol when a next line exists.
      * @param symbol The layout symbol
      * @param button The button to render
      */
     protected void setNextLineButton(char symbol, Button button) {
         setNextLineButton(String.valueOf(symbol), button);
+    }
+
+    /**
+     * Set the next-line button rendered for a layout symbol when a next line exists.
+     * When hidden, the slot renders the button for the fallback layout symbol.
+     * @param symbol The layout symbol
+     * @param fallbackSymbol The fallback layout symbol
+     * @param button The button to render
+     */
+    protected void setNextLineButton(char symbol, char fallbackSymbol, Button button) {
+        setNextLineButton(String.valueOf(symbol), String.valueOf(fallbackSymbol), button);
     }
 
     /**
@@ -200,11 +224,35 @@ public abstract class StaticScrollingMenu implements ChestInterface {
 
     /**
      * Set the previous-line button rendered for a layout symbol when a previous line exists.
+     * When hidden, the slot renders the button for the fallback layout symbol.
+     * @param symbol The layout symbol
+     * @param fallbackSymbol The fallback layout symbol
+     * @param button The button to render
+     */
+    protected void setPreviousLineButton(String symbol, String fallbackSymbol, Button button) {
+        setPreviousLineButton(symbol, button);
+        checkSymbol(fallbackSymbol);
+        previousLineFallbackSymbol = fallbackSymbol;
+    }
+
+    /**
+     * Set the previous-line button rendered for a layout symbol when a previous line exists.
      * @param symbol The layout symbol
      * @param button The button to render
      */
     protected void setPreviousLineButton(char symbol, Button button) {
         setPreviousLineButton(String.valueOf(symbol), button);
+    }
+
+    /**
+     * Set the previous-line button rendered for a layout symbol when a previous line exists.
+     * When hidden, the slot renders the button for the fallback layout symbol.
+     * @param symbol The layout symbol
+     * @param fallbackSymbol The fallback layout symbol
+     * @param button The button to render
+     */
+    protected void setPreviousLineButton(char symbol, char fallbackSymbol, Button button) {
+        setPreviousLineButton(String.valueOf(symbol), String.valueOf(fallbackSymbol), button);
     }
 
     /**
@@ -500,12 +548,12 @@ public abstract class StaticScrollingMenu implements ChestInterface {
     }
 
     private Button buttonForSymbol(String symbol, boolean hasPreviousLine, boolean hasNextLine) {
-        if (previousLineButton != null && previousLineButton.getKey().equals(symbol) && hasPreviousLine) {
-            return previousLineButton.getValue();
+        if (previousLineButton != null && previousLineButton.getKey().equals(symbol)) {
+            return hasPreviousLine ? previousLineButton.getValue() : buttons.get(previousLineFallbackSymbol);
         }
 
-        if (nextLineButton != null && nextLineButton.getKey().equals(symbol) && hasNextLine) {
-            return nextLineButton.getValue();
+        if (nextLineButton != null && nextLineButton.getKey().equals(symbol)) {
+            return hasNextLine ? nextLineButton.getValue() : buttons.get(nextLineFallbackSymbol);
         }
 
         return buttons.get(symbol);
@@ -519,13 +567,7 @@ public abstract class StaticScrollingMenu implements ChestInterface {
             refreshingButtons.put(slot, button);
         }
 
-        ItemStack stack = button.item(player);
-        if (stack == null || stack.getType().isAir()) return;
-
-        MenuInteractionUtil.tagButtonItem(stack, button.uuid());
-
-        SafeUtil.setInventoryItem(inventory, slot, stack);
-        button.onAddToInventory(inventory);
+        MenuInteractionUtil.renderButton(inventory, slot, button, player);
     }
 
     private void detachRenderedButtons() {

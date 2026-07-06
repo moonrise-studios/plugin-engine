@@ -112,6 +112,33 @@ class PaginatedMenuTest extends MockBukkitTest {
     }
 
     @Test
+    void layoutFallbackKeyRendersWhenPageControlsAreHidden() {
+        PlayerMock player = server.addPlayer();
+        TestPaginatedMenu menu = new TestPaginatedMenu(player, 1, List.of());
+        MenuLayout layout = MenuLayout.chest("<cc>#####");
+
+        menu.addButtons(layout, '#', () -> button(Material.GRAY_STAINED_GLASS_PANE));
+        menu.contentSlots(layout, 'c');
+        menu.previousPageButton(layout, '<', '#', button(Material.REDSTONE));
+        menu.nextPageButton(layout, '>', '#', button(Material.EMERALD));
+        menu.setContentUnfiltered(buttons(Material.DIAMOND, 3));
+
+        menu.refresh();
+
+        Inventory inventory = menu.getInventory();
+        assertItem(inventory, 0, Material.GRAY_STAINED_GLASS_PANE);
+        assertItem(inventory, 1, Material.DIAMOND);
+        assertItem(inventory, 2, Material.DIAMOND);
+        assertItem(inventory, 3, Material.EMERALD);
+
+        menu.nextPage();
+
+        assertItem(inventory, 0, Material.REDSTONE);
+        assertItem(inventory, 1, Material.DIAMOND);
+        assertItem(inventory, 3, Material.GRAY_STAINED_GLASS_PANE);
+    }
+
+    @Test
     void pageHelpersClampAndReportState() {
         PlayerMock player = server.addPlayer();
         TestPaginatedMenu menu = new TestPaginatedMenu(player, 1, List.of(0, 1));
@@ -212,8 +239,16 @@ class PaginatedMenuTest extends MockBukkitTest {
             setNextPageButton(layout, key, button);
         }
 
+        private void nextPageButton(MenuLayout layout, char key, char fallbackKey, Button button) {
+            setNextPageButton(layout, key, fallbackKey, button);
+        }
+
         private void previousPageButton(int slot, Button button) {
             setPreviousPageButton(slot, button);
+        }
+
+        private void previousPageButton(MenuLayout layout, char key, char fallbackKey, Button button) {
+            setPreviousPageButton(layout, key, fallbackKey, button);
         }
 
         private void contentSlots(MenuLayout layout, char key) {

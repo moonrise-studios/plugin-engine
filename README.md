@@ -203,7 +203,7 @@ public final class AnnounceJob implements SyncJob {
 
 ## GUI framework
 
-Use `ChestMenu`, `PaginatedMenu`, `ScrollingMenu`, or `HopperMenu` with `Button`:
+Use `ChestMenu`, `PaginatedMenu`, `ScrollingMenu`, `StaticScrollingMenu`, or `HopperMenu` with `Button`:
 
 ```java
 public final class ExampleMenu extends ChestMenu {
@@ -244,6 +244,46 @@ public final class ExampleScrollMenu extends ScrollingMenu {
                 .action((button, viewer, event) -> nextLine())
                 .build());
         setContent(entries);
+    }
+}
+```
+
+`StaticScrollingMenu` renders from a virtual layout. Static line indexes stay pinned in the visible chest rows while every other layout line scrolls.
+
+```java
+public final class ExampleStaticScrollMenu extends StaticScrollingMenu {
+    public ExampleStaticScrollMenu(Player player) {
+        super(player, "<green>Entries", 6);
+
+        setLayout(List.of(
+                "# # # # i # # # #",
+                "# # # # . # # # #",
+                "# # # # . # # # #",
+                "# # # # . # # # #",
+                "# # # # . # # # #",
+                "# # # # . # # # #",
+                "# # a # # # b # #",
+                "# # a # # # b # #",
+                "# # a # # # b # #",
+                "# # a # # # b # #",
+                "# # a # # # b # #",
+                "# # u # x # d # #"
+        ));
+        setStaticLines(0, 11);
+        setButton('i', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.BOOK).name("<yellow>Info").build())
+                .build());
+        setButton('.', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.DIAMOND).name("<aqua>Entry").build())
+                .build());
+        setPreviousLineButton('u', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Up").build())
+                .action((button, viewer, event) -> previousLine())
+                .build());
+        setNextLineButton('d', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Down").build())
+                .action((button, viewer, event) -> nextLine())
+                .build());
     }
 }
 ```

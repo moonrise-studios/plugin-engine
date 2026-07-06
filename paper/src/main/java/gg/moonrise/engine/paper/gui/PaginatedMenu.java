@@ -40,10 +40,14 @@ public abstract class PaginatedMenu implements ChestInterface {
 
     private Map.Entry<Integer, Button> nextPageButton;
     private Map.Entry<Integer, Button> previousPageButton;
+    private Character nextPageFallbackKey;
+    private Character previousPageFallbackKey;
 
     private final Map<Integer, Button> buttons = new HashMap<>();
     private final Map<UUID, Button> buttonById = new HashMap<>();
     private final Map<Integer, Button> refreshingButtons = new HashMap<>();
+    private final Map<Character, IntFunction<Button>> layoutButtonFactories = new HashMap<>();
+    private final Set<Button> transientButtons = new HashSet<>();
 
     private final Map<Integer, List<Button>> pages = new HashMap<>();
     private final List<Integer> contentSlots = new ArrayList<>();
@@ -198,6 +202,19 @@ public abstract class PaginatedMenu implements ChestInterface {
     }
 
     /**
+     * Set the next page button using the first slot matching a layout key.
+     * When hidden, the slot renders a button from the fallback layout key.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param fallbackKey The fallback layout key
+     * @param button The button to set
+     */
+    public void setNextPageButton(MenuLayout layout, char key, char fallbackKey, Button button) {
+        setNextPageButton(layout, key, button);
+        nextPageFallbackKey = fallbackKey;
+    }
+
+    /**
      * Set the previous page button for the paginated menu
      * @param slot The slot to place the button in
      * @param button The button to set
@@ -216,6 +233,19 @@ public abstract class PaginatedMenu implements ChestInterface {
      */
     public void setPreviousPageButton(MenuLayout layout, char key, Button button) {
         setPreviousPageButton(layout.firstSlot(key), button);
+    }
+
+    /**
+     * Set the previous page button using the first slot matching a layout key.
+     * When hidden, the slot renders a button from the fallback layout key.
+     * @param layout The layout to read
+     * @param key The layout key
+     * @param fallbackKey The fallback layout key
+     * @param button The button to set
+     */
+    public void setPreviousPageButton(MenuLayout layout, char key, char fallbackKey, Button button) {
+        setPreviousPageButton(layout, key, button);
+        previousPageFallbackKey = fallbackKey;
     }
 
     /**
@@ -280,6 +310,7 @@ public abstract class PaginatedMenu implements ChestInterface {
             inventory = createInventory();
 
         clearInventory(inventory);
+        detachTransientButtons();
 
         buttons.forEach((slot, button) -> {
             button.onAddToInventory(null);
@@ -298,10 +329,14 @@ public abstract class PaginatedMenu implements ChestInterface {
         if (hasNextPage) {
             Preconditions.checkNotNull(nextPageButton, "Next Page Button cannot be null.");
             listingSlots.remove(Integer.valueOf(nextPageButton.getKey()));
+        } else if (nextPageButton != null && nextPageFallbackKey != null) {
+            listingSlots.remove(Integer.valueOf(nextPageButton.getKey()));
         }
 
         if (hasPreviousPage) {
             Preconditions.checkNotNull(previousPageButton, "Previous Page Button cannot be null.");
+            listingSlots.remove(Integer.valueOf(previousPageButton.getKey()));
+        } else if (previousPageButton != null && previousPageFallbackKey != null) {
             listingSlots.remove(Integer.valueOf(previousPageButton.getKey()));
         }
 
@@ -322,10 +357,14 @@ public abstract class PaginatedMenu implements ChestInterface {
 
         if (hasNextPage) {
             renderButtonToSlot(nextPageButton.getKey(), nextPageButton.getValue());
+        } else {
+            renderFallbackButton(nextPageButton, nextPageFallbackKey);
         }
 
         if (hasPreviousPage) {
             renderButtonToSlot(previousPageButton.getKey(), previousPageButton.getValue());
+        } else {
+            renderFallbackButton(previousPageButton, previousPageFallbackKey);
         }
     }
 
@@ -375,6 +414,7 @@ public abstract class PaginatedMenu implements ChestInterface {
      * @param button The button to add
      */
     public void addButton(MenuLayout layout, char key, Button button) {
+        layoutButtonFactories.put(key, slot -> button);
         addButton(layout.firstSlot(key), button);
     }
 
@@ -398,6 +438,7 @@ public abstract class PaginatedMenu implements ChestInterface {
     public void addButtons(MenuLayout layout, char key, IntFunction<Button> buttonFactory) {
         Objects.requireNonNull(layout, "layout");
         Objects.requireNonNull(buttonFactory, "buttonFactory");
+        layoutButtonFactories.put(key, buttonFactory);
 
         for (int slot : layout.slots(key)) {
             Button button = Objects.requireNonNull(buttonFactory.apply(slot), "buttonFactory returned null");
@@ -458,10 +499,12 @@ public abstract class PaginatedMenu implements ChestInterface {
      */
     public void clearButtons() {
         buttons.values().forEach(button -> button.onAddToInventory(null));
+        detachTransientButtons();
         buttons.clear();
         buttonById.clear();
         refreshingButtons.clear();
         refreshingContentButtons.clear();
+        layoutButtonFactories.clear();
     }
 
     /**
@@ -659,6 +702,33 @@ public abstract class PaginatedMenu implements ChestInterface {
     private void renderButtonToSlot(int slot, Button button) {
         buttonById.put(button.uuid(), button);
         MenuInteractionUtil.renderButton(inventory, slot, button, player);
+    }
+
+    private void renderFallbackButton(Map.Entry<Integer, Button> controlButton, Character fallbackKey) {
+        if (controlButton == null || fallbackKey == null) return;
+
+        IntFunction<Button> buttonFactory = layoutButtonFactories.get(fallbackKey);
+        Preconditions.checkNotNull(buttonFactory, "Fallback layout key '" + fallbackKey + "' has no registered button factory.");
+
+        int slot = controlButton.getKey();
+        Button button = Objects.requireNonNull(buttonFactory.apply(slot), "buttonFactory returned null");
+        transientButtons.add(button);
+        buttonById.put(button.uuid(), button);
+
+        if (button.refreshIntervalTicks() > 0L) {
+            refreshingButtons.put(slot, button);
+        }
+
+        MenuInteractionUtil.renderButton(inventory, slot, button, player);
+    }
+
+    private void detachTransientButtons() {
+        refreshingButtons.entrySet().removeIf(entry -> transientButtons.contains(entry.getValue()));
+        transientButtons.forEach(button -> {
+            button.onAddToInventory(null);
+            buttonById.remove(button.uuid());
+        });
+        transientButtons.clear();
     }
 
     private Inventory createInventory() {

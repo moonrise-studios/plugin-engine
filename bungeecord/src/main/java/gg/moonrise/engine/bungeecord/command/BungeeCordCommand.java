@@ -5,4 +5,8 @@ import net.md_5.bungee.api.CommandSender;
 
 public interface BungeeCordCommand extends CloudCommand<CommandSender> {
 
+    default boolean shouldEnable() {
+        return true;
+    }
+
 }

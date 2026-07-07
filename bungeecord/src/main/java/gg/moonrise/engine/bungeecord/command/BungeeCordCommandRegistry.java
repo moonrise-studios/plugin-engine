@@ -44,6 +44,8 @@ public class BungeeCordCommandRegistry implements Enableable {
         AnnotationParser<CommandSender> annotationParser = new AnnotationParser<>(commands, CommandSender.class);
 
         plugin.invokeBeans(BungeeCordCommand.class, command -> {
+            if (!command.shouldEnable()) return;
+
             command.onRegister(commands);
             annotationParser.parse(command);
             log.info("Registered command: {}", command.getClass().getSimpleName());

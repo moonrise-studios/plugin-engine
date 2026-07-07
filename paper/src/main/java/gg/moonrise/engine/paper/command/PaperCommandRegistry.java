@@ -41,6 +41,8 @@ public class PaperCommandRegistry implements Enableable {
         AnnotationParser<CommandSourceStack> annotationParser = new AnnotationParser<>(commands, CommandSourceStack.class);
 
         plugin.invokeBeans(PaperCommand.class, command -> {
+            if (!command.shouldEnable()) return;
+
             command.onRegister(commands);
             annotationParser.parse(command);
             log.info("Registered command: {}", command.getClass().getSimpleName());

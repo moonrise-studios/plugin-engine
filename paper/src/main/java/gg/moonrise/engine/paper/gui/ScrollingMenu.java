@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.gui.holder.ScrollingMenuHolder;
+import gg.moonrise.engine.paper.gui.layout.ContentSlotOrder;
+import gg.moonrise.engine.paper.gui.layout.MenuLayout;
 import gg.moonrise.engine.paper.gui.util.MenuInteractionUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.Component;
@@ -23,6 +25,8 @@ import java.util.function.Function;
 /**
  * Represents a chest-based scrolling menu for players.
  * This class renders a fixed viewport over a larger list of content buttons.
+ * Menus scroll vertically by default, or horizontally when configured with
+ * {@link #setScrollDirection(ScrollDirection)}.
  */
 @Slf4j
 public abstract class ScrollingMenu implements ChestInterface {
@@ -44,7 +48,10 @@ public abstract class ScrollingMenu implements ChestInterface {
     private final List<Button> content = new ArrayList<>();
     private final Map<Integer, Button> refreshingContentButtons = new HashMap<>();
 
+    private MenuLayout contentShape;
+    private char contentShapeKey = 'x';
     private int lineLength = -1;
+    private ScrollDirection scrollDirection = ScrollDirection.VERTICAL;
 
     protected Inventory inventory;
     private boolean cancelClicks = true;
@@ -91,10 +98,12 @@ public abstract class ScrollingMenu implements ChestInterface {
 
     /**
      * Set the content slots used as the visible scrolling viewport.
-     * Slots are rendered in the given order.
+     * Vertical scrolling renders slots in the given order. Horizontal scrolling
+     * renders slots column by column from top to bottom.
      * @param slots The list of slots to set as content slots
      */
     protected void setContentSlots(List<Integer> slots) {
+        contentShape = null;
         contentSlots.clear();
         for (Integer slot : slots) {
             checkSlot(slot);
@@ -104,10 +113,47 @@ public abstract class ScrollingMenu implements ChestInterface {
     }
 
     /**
+     * Set a virtual content shape using {@code x} as the content key.
+     * Shape rows may exceed the visible inventory width for horizontal scrolling
+     * or the visible inventory height for vertical scrolling.
+     * @param rows The virtual shape rows
+     */
+    protected void setContentShape(List<String> rows) {
+        setContentShape(rows, 'x');
+    }
+
+    /**
+     * Set a virtual content shape from formatted rows.
+     * Whitespace is ignored and every matching key consumes one content button.
+     * @param rows The virtual shape rows
+     * @param contentKey The character marking content cells
+     */
+    protected void setContentShape(List<String> rows, char contentKey) {
+        Preconditions.checkArgument(rows != null && !rows.isEmpty(), "Content shape cannot be empty.");
+        int width = sanitizedLength(rows.getFirst());
+        Preconditions.checkArgument(width > 0, "Content shape rows cannot be empty.");
+        setContentShape(MenuLayout.of(width, rows.toArray(String[]::new)), contentKey);
+    }
+
+    /**
+     * Set a virtual content shape from a menu layout.
+     * @param shape The virtual shape
+     * @param contentKey The character marking content cells
+     */
+    protected void setContentShape(MenuLayout shape, char contentKey) {
+        MenuLayout checkedShape = Objects.requireNonNull(shape, "shape");
+        Preconditions.checkArgument(checkedShape.has(contentKey), "Content shape must contain key '" + contentKey + "'.");
+        this.contentShape = checkedShape;
+        this.contentShapeKey = contentKey;
+        contentSlots.clear();
+    }
+
+    /**
      * Set the content slots from a list of strings.
      * @param slotStrings The list of slot strings to set as content slots
      */
     protected void setContentSlotsFromString(List<String> slotStrings) {
+        contentShape = null;
         contentSlots.clear();
         slotStrings.forEach(slotString -> {
             if (slotString.contains("-")) {
@@ -120,12 +166,32 @@ public abstract class ScrollingMenu implements ChestInterface {
 
     /**
      * Set how many content buttons make up one scroll line.
-     * If unset, the first content row width is inferred from the configured slots.
+     * This setting applies to slot-list viewports; virtual content shapes derive
+     * their line size from shape dimensions.
+     * If unset, vertical scrolling infers the first content row width and
+     * horizontal scrolling infers the first content column height.
      * @param lineLength The number of content buttons in one scroll line
      */
     protected void setLineLength(int lineLength) {
         Preconditions.checkArgument(lineLength > 0, "Line length must be greater than 0.");
         this.lineLength = lineLength;
+    }
+
+    /**
+     * Set the direction in which this menu scrolls.
+     * @param scrollDirection The scroll direction
+     */
+    protected void setScrollDirection(ScrollDirection scrollDirection) {
+        this.scrollDirection = Objects.requireNonNull(scrollDirection, "scrollDirection");
+    }
+
+    /**
+     * Get the direction in which this menu scrolls.
+     * @return The scroll direction
+     */
+    @Contract(pure = true)
+    public ScrollDirection getScrollDirection() {
+        return scrollDirection;
     }
 
     /**
@@ -223,27 +289,15 @@ public abstract class ScrollingMenu implements ChestInterface {
             renderButtonToSlot(slot, button);
         });
 
-        List<Integer> viewportSlots = viewportSlots();
-        int lineLength = effectiveLineLength(viewportSlots);
-        int maxLine = maxLine(viewportSlots, lineLength);
+        int maxLine = currentMaxLine();
         line = clampLine(line, maxLine);
 
         boolean hasNextLine = line < maxLine;
         boolean hasPreviousLine = line > 0;
 
         refreshingContentButtons.clear();
-
-        int contentIndex = line * lineLength;
-        for (Integer slot : viewportSlots) {
-            if (contentIndex >= content.size()) break;
-
-            Button button = content.get(contentIndex++);
-            renderButtonToSlot(slot, button);
-
-            if (button.refreshIntervalTicks() > 0L) {
-                refreshingContentButtons.put(slot, button);
-            }
-        }
+        if (contentShape == null) renderSlotContent();
+        else renderShapeContent();
 
         if (hasNextLine) {
             Preconditions.checkNotNull(nextLineButton, "Next Line Button cannot be null.");
@@ -402,7 +456,7 @@ public abstract class ScrollingMenu implements ChestInterface {
             buttonById.put(button.uuid(), button);
         }
 
-        line = clampLine(line, maxLine(viewportSlots(), effectiveLineLength(viewportSlots())));
+        line = clampLine(line, currentMaxLine());
     }
 
     /**
@@ -410,7 +464,7 @@ public abstract class ScrollingMenu implements ChestInterface {
      * @param line The line number to change to
      */
     public void changeLine(int line) {
-        this.line = clampLine(line, maxLine(viewportSlots(), effectiveLineLength(viewportSlots())));
+        this.line = clampLine(line, currentMaxLine());
         refresh();
     }
 
@@ -443,8 +497,7 @@ public abstract class ScrollingMenu implements ChestInterface {
      */
     @Contract(pure = true)
     public int getMaxLine() {
-        List<Integer> viewportSlots = viewportSlots();
-        return maxLine(viewportSlots, effectiveLineLength(viewportSlots));
+        return currentMaxLine();
     }
 
     /**
@@ -536,6 +589,105 @@ public abstract class ScrollingMenu implements ChestInterface {
         }
     }
 
+    private int sanitizedLength(String row) {
+        Objects.requireNonNull(row, "Content shape row");
+        int length = 0;
+        for (int i = 0; i < row.length(); i++) {
+            if (!Character.isWhitespace(row.charAt(i))) length++;
+        }
+        return length;
+    }
+
+    private void renderSlotContent() {
+        List<Integer> viewportSlots = viewportSlots();
+        int contentIndex = line * effectiveLineLength(viewportSlots);
+        for (Integer slot : viewportSlots) {
+            if (contentIndex >= content.size()) break;
+
+            renderContentButton(slot, content.get(contentIndex++));
+        }
+    }
+
+    private void renderShapeContent() {
+        validateContentShapeDirection();
+        List<ContentCell> cells = contentShapeCells();
+        int limit = Math.min(content.size(), cells.size());
+        for (int contentIndex = 0; contentIndex < limit; contentIndex++) {
+            ContentCell cell = cells.get(contentIndex);
+            int viewX = cell.x() - (scrollDirection == ScrollDirection.HORIZONTAL ? line : 0);
+            int viewY = cell.y() - (scrollDirection == ScrollDirection.VERTICAL ? line : 0);
+            if (viewX < 0 || viewX >= 9 || viewY < 0 || viewY >= rows) continue;
+
+            int slot = viewY * 9 + viewX;
+            if (isReservedContentSlot(slot)) continue;
+            renderContentButton(slot, content.get(contentIndex));
+        }
+    }
+
+    private void renderContentButton(int slot, Button button) {
+        renderButtonToSlot(slot, button);
+        if (button.refreshIntervalTicks() > 0L) {
+            refreshingContentButtons.put(slot, button);
+        }
+    }
+
+    private boolean isReservedContentSlot(int slot) {
+        if (buttons.containsKey(slot)) return true;
+        if (nextLineButton != null && nextLineButton.getKey() == slot) return true;
+        return previousLineButton != null && previousLineButton.getKey() == slot;
+    }
+
+    private List<ContentCell> contentShapeCells() {
+        ContentSlotOrder order = scrollDirection == ScrollDirection.HORIZONTAL
+                ? ContentSlotOrder.VERTICAL
+                : ContentSlotOrder.HORIZONTAL;
+        List<ContentCell> cells = new ArrayList<>();
+        for (Integer slot : contentShape.slots(contentShapeKey, order)) {
+            cells.add(new ContentCell(slot % contentShape.width(), slot / contentShape.width()));
+        }
+        return cells;
+    }
+
+    private void validateContentShapeDirection() {
+        if (scrollDirection == ScrollDirection.HORIZONTAL) {
+            Preconditions.checkArgument(
+                    contentShape.height() <= rows,
+                    "Horizontal content shape height cannot exceed visible menu rows."
+            );
+        } else {
+            Preconditions.checkArgument(
+                    contentShape.width() <= 9,
+                    "Vertical content shape width cannot exceed 9."
+            );
+        }
+    }
+
+    private int currentMaxLine() {
+        if (contentShape != null) return maxShapeLine();
+
+        List<Integer> viewportSlots = viewportSlots();
+        return maxLine(viewportSlots, effectiveLineLength(viewportSlots));
+    }
+
+    private int maxShapeLine() {
+        validateContentShapeDirection();
+        List<ContentCell> cells = contentShapeCells();
+        int limit = Math.min(content.size(), cells.size());
+        if (limit == 0) return 0;
+
+        int furthestLine = 0;
+        for (int i = 0; i < limit; i++) {
+            ContentCell cell = cells.get(i);
+            int cellLine = scrollDirection == ScrollDirection.HORIZONTAL ? cell.x() : cell.y();
+            furthestLine = Math.max(furthestLine, cellLine);
+        }
+
+        int visibleLines = scrollDirection == ScrollDirection.HORIZONTAL
+                ? Math.min(9, contentShape.width())
+                : Math.min(rows, contentShape.height());
+        return Math.max(0, furthestLine - visibleLines + 1);
+    }
+
     private List<Integer> viewportSlots() {
         List<Integer> viewportSlots = new ArrayList<>(contentSlots);
         viewportSlots.removeAll(buttons.keySet());
@@ -548,6 +700,12 @@ public abstract class ScrollingMenu implements ChestInterface {
             viewportSlots.remove(Integer.valueOf(previousLineButton.getKey()));
         }
 
+        if (scrollDirection == ScrollDirection.HORIZONTAL) {
+            viewportSlots.sort(Comparator
+                    .comparingInt((Integer slot) -> slot % 9)
+                    .thenComparingInt(slot -> slot / 9));
+        }
+
         return viewportSlots;
     }
 
@@ -555,10 +713,13 @@ public abstract class ScrollingMenu implements ChestInterface {
         if (lineLength > 0) return lineLength;
         if (viewportSlots.isEmpty()) return 1;
 
-        int firstRow = viewportSlots.getFirst() / 9;
+        int firstLine = scrollDirection == ScrollDirection.VERTICAL
+                ? viewportSlots.getFirst() / 9
+                : viewportSlots.getFirst() % 9;
         int inferred = 0;
         for (Integer slot : viewportSlots) {
-            if (slot / 9 != firstRow) continue;
+            int slotLine = scrollDirection == ScrollDirection.VERTICAL ? slot / 9 : slot % 9;
+            if (slotLine != firstLine) continue;
             inferred++;
         }
 
@@ -598,6 +759,9 @@ public abstract class ScrollingMenu implements ChestInterface {
         Inventory created = Bukkit.createInventory(holder, rows * 9, title);
         holder.setInventory(created);
         return created;
+    }
+
+    private record ContentCell(int x, int y) {
     }
 
 }

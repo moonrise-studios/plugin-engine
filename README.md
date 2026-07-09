@@ -276,25 +276,56 @@ public final class PlayersMenu extends PaginatedMenu {
 }
 ```
 
-`ScrollingMenu` renders a fixed viewport over a larger content list. Configure content slots in display order, optionally set the line width, then wire previous/next line buttons that call `previousLine()` and `nextLine()`.
+`ScrollingMenu` renders a fixed viewport over a larger content list. Scrolling defaults to `ScrollDirection.VERTICAL`. Slot-list viewports preserve existing behavior: vertical mode uses configured order, horizontal mode orders slots by column, and `setLineLength(...)` overrides inferred line size. Virtual content shapes use formatted rows where whitespace is ignored and `x` marks content cells. Shapes may exceed visible height for vertical scrolling or nine columns for horizontal scrolling. Wire previous/next line buttons to `previousLine()` and `nextLine()`.
 
 ```java
 public final class ExampleScrollMenu extends ScrollingMenu {
     public ExampleScrollMenu(Player player, List<Button> entries) {
         super(player, "<green>Entries", 5);
 
-        setContentSlots(List.of(
-                2, 3, 4, 5, 6, 7,
-                11, 12, 13, 14, 15, 16,
-                20, 21, 22, 23, 24, 25
+        setContentShape(List.of(
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x"
         ));
-        setLineLength(6);
         setPreviousLineButton(0, Button.builder()
                 .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Up").build())
                 .action((button, viewer, event) -> previousLine())
                 .build());
         setNextLineButton(36, Button.builder()
                 .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Down").build())
+                .action((button, viewer, event) -> nextLine())
+                .build());
+        setContent(entries);
+    }
+}
+```
+
+Horizontal menus use the same content list and navigation API with left/right controls:
+
+```java
+public final class HorizontalScrollMenu extends ScrollingMenu {
+    public HorizontalScrollMenu(Player player, List<Button> entries) {
+        super(player, "<green>Entries", 4);
+
+        setScrollDirection(ScrollDirection.HORIZONTAL);
+        setContentShape(List.of(
+                "x x x x x x x x x x x x x x x x x x x",
+                "x x x x x x x x x x x x x x x x x x x",
+                "x x x x x x x x x x x x x x x x x x x"
+        ));
+        setPreviousLineButton(27, Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Left").build())
+                .action((button, viewer, event) -> previousLine())
+                .build());
+        setNextLineButton(35, Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Right").build())
                 .action((button, viewer, event) -> nextLine())
                 .build());
         setContent(entries);

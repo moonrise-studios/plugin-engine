@@ -16,6 +16,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StaticScrollingMenuTest extends MockBukkitTest {
@@ -36,8 +37,8 @@ class StaticScrollingMenuTest extends MockBukkitTest {
     );
 
     private static final List<String> HORIZONTAL_LAYOUT = List.of(
-            "u 1 2 3 4 5 6 7 8 9 A B C D E F G H d",
-            "x x x x x x x x x x x x x x x x x x x",
+            "u # # # # # # # d # # # # # # # # # #",
+            "1 2 3 4 5 6 7 8 9 A B C D E F G H I J",
             "# # # # # # # # # # # # # # # # # # #"
     );
 
@@ -178,17 +179,17 @@ class StaticScrollingMenuTest extends MockBukkitTest {
     }
 
     @Test
-    void horizontalLayoutScrollsAcrossNineteenColumnsWithPinnedColumns() {
+    void horizontalLayoutScrollsNonStaticRowsAcrossNineteenColumns() {
         PlayerMock player = server.addPlayer();
         TestStaticScrollingMenu menu = new TestStaticScrollingMenu(player, 3);
 
         menu.scrollDirection(ScrollDirection.HORIZONTAL);
         menu.layout(HORIZONTAL_LAYOUT);
-        menu.staticLines(0, 18);
+        assertThrows(IllegalArgumentException.class, () -> menu.staticLines(18));
+        menu.staticLines(0, 2);
         menu.button('1', button(Material.DIAMOND));
         menu.button('B', button(Material.GOLD_INGOT));
-        menu.button('H', button(Material.LAPIS_LAZULI));
-        menu.button('x', button(Material.IRON_INGOT));
+        menu.button('I', button(Material.LAPIS_LAZULI));
         menu.button('#', button(Material.GRAY_STAINED_GLASS_PANE));
         menu.previousLineButton('u', button(Material.REDSTONE));
         menu.nextLineButton('d', button(Material.ARROW));
@@ -197,16 +198,18 @@ class StaticScrollingMenuTest extends MockBukkitTest {
         Inventory inventory = menu.getInventory();
         assertEquals(ScrollDirection.HORIZONTAL, menu.getScrollDirection());
         assertNull(inventory.getItem(0));
-        assertItem(inventory, 1, Material.DIAMOND);
         assertItem(inventory, 8, Material.ARROW);
+        assertItem(inventory, 9, Material.DIAMOND);
+        assertItem(inventory, 18, Material.GRAY_STAINED_GLASS_PANE);
         assertEquals(10, menu.getMaxLine());
 
         menu.changeLine(10);
 
         assertItem(inventory, 0, Material.REDSTONE);
-        assertItem(inventory, 1, Material.GOLD_INGOT);
-        assertItem(inventory, 7, Material.LAPIS_LAZULI);
         assertNull(inventory.getItem(8));
+        assertItem(inventory, 9, Material.GOLD_INGOT);
+        assertItem(inventory, 16, Material.LAPIS_LAZULI);
+        assertItem(inventory, 18, Material.GRAY_STAINED_GLASS_PANE);
         assertEquals(10, menu.getLine());
     }
 

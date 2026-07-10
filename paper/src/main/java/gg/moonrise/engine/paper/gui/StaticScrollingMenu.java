@@ -20,8 +20,8 @@ import java.util.*;
 /**
  * Represents a chest-based static scrolling menu for players.
  * This class renders a scrolling viewport over layout lines while configured
- * static lines stay pinned in the visible inventory. Vertical scrolling treats
- * layout rows as lines; horizontal scrolling treats layout columns as lines.
+ * static layout rows stay pinned in the visible inventory. Vertical scrolling
+ * moves non-static rows; horizontal scrolling shifts non-static rows by column.
  */
 public abstract class StaticScrollingMenu implements ChestInterface {
 
@@ -150,9 +150,8 @@ public abstract class StaticScrollingMenu implements ChestInterface {
     }
 
     /**
-     * Set the layout lines that should stay pinned while the other lines scroll.
-     * Line indexes refer to rows in vertical mode and columns in horizontal mode.
-     * @param lines The static layout line indexes
+     * Set the layout rows that should stay pinned while the other rows scroll.
+     * @param lines The static layout row indexes
      */
     protected void setStaticLines(Collection<Integer> lines) {
         Preconditions.checkArgument(lines != null, "Static lines cannot be null.");
@@ -169,9 +168,8 @@ public abstract class StaticScrollingMenu implements ChestInterface {
     }
 
     /**
-     * Set the layout lines that should stay pinned while the other lines scroll.
-     * Line indexes refer to rows in vertical mode and columns in horizontal mode.
-     * @param lines The static layout line indexes
+     * Set the layout rows that should stay pinned while the other rows scroll.
+     * @param lines The static layout row indexes
      */
     protected void setStaticLines(Integer... lines) {
         setStaticLines(Arrays.asList(lines));
@@ -391,27 +389,26 @@ public abstract class StaticScrollingMenu implements ChestInterface {
     }
 
     private void refreshHorizontal() {
-        Map<Integer, Integer> staticLinesByDisplayColumn = staticLinesByDisplayLine(layoutWidth, COLUMNS);
-        List<Integer> scrollingLines = scrollingLines(layoutWidth);
-        int scrollColumns = COLUMNS - staticLinesByDisplayColumn.size();
-        int maxLine = maxLine(scrollingLines.size(), scrollColumns);
+        Map<Integer, Integer> staticLinesByDisplayRow = staticLinesByDisplayLine(layout.size(), rows);
+        List<Integer> scrollingRows = scrollingLines(layout.size());
+        int maxLine = scrollingRows.isEmpty() ? 0 : maxLine(layoutWidth, COLUMNS);
         line = clampLine(line, maxLine);
 
         boolean hasNextLine = line < maxLine;
         boolean hasPreviousLine = line > 0;
-        int scrollingLineOffset = line;
+        int scrollingRowOffset = 0;
 
-        for (int column = 0; column < COLUMNS; column++) {
-            Integer staticLine = staticLinesByDisplayColumn.get(column);
+        for (int row = 0; row < rows; row++) {
+            Integer staticLine = staticLinesByDisplayRow.get(row);
             if (staticLine != null) {
-                renderLayoutColumn(column, staticLine, hasPreviousLine, hasNextLine);
+                renderLayoutWindow(row, layout.get(staticLine), 0, hasPreviousLine, hasNextLine);
                 continue;
             }
 
-            if (scrollingLineOffset >= scrollingLines.size()) continue;
+            if (scrollingRowOffset >= scrollingRows.size()) continue;
 
-            int layoutLine = scrollingLines.get(scrollingLineOffset++);
-            renderLayoutColumn(column, layoutLine, hasPreviousLine, hasNextLine);
+            int layoutLine = scrollingRows.get(scrollingRowOffset++);
+            renderLayoutWindow(row, layout.get(layoutLine), line, hasPreviousLine, hasNextLine);
         }
     }
 
@@ -562,8 +559,13 @@ public abstract class StaticScrollingMenu implements ChestInterface {
 
         validateLayoutDirection();
         validateStaticLineCount();
-        int visibleScrollingLines = visibleLineCount() - staticLines.size();
-        return maxLine(scrollingLines(layoutLineCount()).size(), visibleScrollingLines);
+        List<Integer> scrollingRows = scrollingLines(layout.size());
+        if (scrollDirection == ScrollDirection.HORIZONTAL) {
+            return scrollingRows.isEmpty() ? 0 : maxLine(layoutWidth, COLUMNS);
+        }
+
+        int visibleScrollingRows = rows - staticLines.size();
+        return maxLine(scrollingRows.size(), visibleScrollingRows);
     }
 
     /**
@@ -624,17 +626,21 @@ public abstract class StaticScrollingMenu implements ChestInterface {
         }
     }
 
-    private void renderLayoutColumn(
-            int displayColumn,
-            int layoutColumn,
+    private void renderLayoutWindow(
+            int displayRow,
+            List<String> layoutLine,
+            int columnOffset,
             boolean hasPreviousLine,
             boolean hasNextLine
     ) {
-        for (int row = 0; row < layout.size(); row++) {
-            Button button = buttonForSymbol(layout.get(row).get(layoutColumn), hasPreviousLine, hasNextLine);
+        for (int column = 0; column < COLUMNS; column++) {
+            int layoutColumn = columnOffset + column;
+            if (layoutColumn >= layoutLine.size()) break;
+
+            Button button = buttonForSymbol(layoutLine.get(layoutColumn), hasPreviousLine, hasNextLine);
             if (button == null) continue;
 
-            renderButtonToSlot(row * COLUMNS + displayColumn, button);
+            renderButtonToSlot(displayRow * COLUMNS + column, button);
         }
     }
 
@@ -769,8 +775,8 @@ public abstract class StaticScrollingMenu implements ChestInterface {
 
     private void validateStaticLineCount() {
         Preconditions.checkArgument(
-                staticLines.size() <= visibleLineCount(),
-                "Static line count cannot exceed visible lines."
+                staticLines.size() <= rows,
+                "Static line count cannot exceed visible rows."
         );
     }
 
@@ -780,8 +786,8 @@ public abstract class StaticScrollingMenu implements ChestInterface {
 
         for (Integer staticLine : staticLines) {
             Preconditions.checkArgument(
-                    staticLine < layoutLineCount(),
-                    "Static line " + staticLine + " is outside layout size " + layoutLineCount() + "."
+                    staticLine < layout.size(),
+                    "Static line " + staticLine + " is outside layout size " + layout.size() + "."
             );
         }
     }
@@ -797,14 +803,6 @@ public abstract class StaticScrollingMenu implements ChestInterface {
         } else {
             Preconditions.checkArgument(layoutWidth == COLUMNS, "Vertical layouts must contain exactly 9 columns.");
         }
-    }
-
-    private int layoutLineCount() {
-        return scrollDirection == ScrollDirection.HORIZONTAL ? layoutWidth : layout.size();
-    }
-
-    private int visibleLineCount() {
-        return scrollDirection == ScrollDirection.HORIZONTAL ? COLUMNS : rows;
     }
 
     private void checkSymbol(String symbol) {

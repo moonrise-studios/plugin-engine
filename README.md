@@ -276,7 +276,9 @@ public final class PlayersMenu extends PaginatedMenu {
 }
 ```
 
-`ScrollingMenu` renders a fixed viewport over a larger content list. Scrolling defaults to `ScrollDirection.VERTICAL`. Slot-list viewports preserve existing behavior: vertical mode uses configured order, horizontal mode orders slots by column, and `setLineLength(...)` overrides inferred line size. Virtual content shapes use formatted rows where whitespace is ignored and `x` marks content cells. Shapes may exceed visible height for vertical scrolling or nine columns for horizontal scrolling. Wire previous/next line buttons to `previousLine()` and `nextLine()`.
+### `ScrollingMenu`: vertical
+
+`ScrollingMenu` renders buttons from one content list into a viewport. `ScrollDirection.VERTICAL` is the default. With a virtual shape, `x` cells consume content row by row. Shape width cannot exceed nine columns; shape height may exceed visible menu rows. Each line change moves the viewport by one row. Navigation button slots are reserved from content rendering.
 
 ```java
 public final class ExampleScrollMenu extends ScrollingMenu {
@@ -307,7 +309,9 @@ public final class ExampleScrollMenu extends ScrollingMenu {
 }
 ```
 
-Horizontal menus use the same content list and navigation API with left/right controls:
+### `ScrollingMenu`: horizontal
+
+Set direction before configuring a horizontal shape. `x` cells consume content column by column. Shape height cannot exceed visible menu rows; shape width may exceed nine columns. Each line change moves the viewport by one column. This example uses a fourth inventory row for fixed left/right controls.
 
 ```java
 public final class HorizontalScrollMenu extends ScrollingMenu {
@@ -333,7 +337,9 @@ public final class HorizontalScrollMenu extends ScrollingMenu {
 }
 ```
 
-`StaticScrollingMenu` renders from a virtual layout. It defaults to vertical scrolling, where static line indexes pin layout rows. With `ScrollDirection.HORIZONTAL`, static line indexes pin layout columns and layouts may exceed nine columns. Navigation controls can name a fallback symbol, such as `#`, for the item to render when the control is hidden.
+### `StaticScrollingMenu`: vertical
+
+`StaticScrollingMenu` maps layout symbols to buttons. `ScrollDirection.VERTICAL` is the default. Layouts are exactly nine columns wide and may exceed visible menu rows. `setStaticLines(...)` always accepts layout row indexes; those rows remain pinned while non-static rows move vertically. Navigation controls may use a fallback symbol, such as `#`, when hidden.
 
 ```java
 public final class ExampleStaticScrollMenu extends StaticScrollingMenu {
@@ -376,7 +382,9 @@ public final class ExampleStaticScrollMenu extends StaticScrollingMenu {
 }
 ```
 
-Horizontal static layouts use the same format and pin selected columns:
+### `StaticScrollingMenu`: horizontal
+
+Set horizontal direction before configuring the layout. Horizontal static layouts may exceed nine columns but cannot exceed visible menu rows. `setStaticLines(...)` still accepts row indexes: static rows render their first nine columns without shifting, while non-static rows shift left or right one column per line change. In this three-row layout, rows `0` and `2` stay fixed; only row `1` scrolls.
 
 ```java
 public final class HorizontalStaticScrollMenu extends StaticScrollingMenu {
@@ -385,13 +393,16 @@ public final class HorizontalStaticScrollMenu extends StaticScrollingMenu {
 
         setScrollDirection(ScrollDirection.HORIZONTAL);
         setLayout(List.of(
-                "u x x x x x x x x x x x x x x x x x d",
+                "u # # # # # # # d # # # # # # # # # #",
                 "x x x x x x x x x x x x x x x x x x x",
-                "x x x x x x x x x x x x x x x x x x x"
+                "# # # # # # # # # # # # # # # # # # #"
         ));
-        setStaticLines(0, 18);
+        setStaticLines(0, 2);
         setButton('x', Button.builder()
                 .item(viewer -> ItemBuilder.of(Material.DIAMOND).name("<aqua>Entry").build())
+                .build());
+        setButton('#', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.BLACK_STAINED_GLASS_PANE).name(" ").build())
                 .build());
         setPreviousLineButton('u', Button.builder()
                 .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Left").build())

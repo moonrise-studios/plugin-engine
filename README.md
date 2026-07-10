@@ -333,7 +333,7 @@ public final class HorizontalScrollMenu extends ScrollingMenu {
 }
 ```
 
-`StaticScrollingMenu` renders from a virtual layout. Static line indexes stay pinned in the visible chest rows while every other layout line scrolls. Up/down controls can name a fallback symbol, such as `#`, for the item to render when the control is hidden.
+`StaticScrollingMenu` renders from a virtual layout. It defaults to vertical scrolling, where static line indexes pin layout rows. With `ScrollDirection.HORIZONTAL`, static line indexes pin layout columns and layouts may exceed nine columns. Navigation controls can name a fallback symbol, such as `#`, for the item to render when the control is hidden.
 
 ```java
 public final class ExampleStaticScrollMenu extends StaticScrollingMenu {
@@ -370,6 +370,35 @@ public final class ExampleStaticScrollMenu extends StaticScrollingMenu {
                 .build());
         setNextLineButton('d', '#', Button.builder()
                 .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Down").build())
+                .action((button, viewer, event) -> nextLine())
+                .build());
+    }
+}
+```
+
+Horizontal static layouts use the same format and pin selected columns:
+
+```java
+public final class HorizontalStaticScrollMenu extends StaticScrollingMenu {
+    public HorizontalStaticScrollMenu(Player player) {
+        super(player, "<green>Entries", 3);
+
+        setScrollDirection(ScrollDirection.HORIZONTAL);
+        setLayout(List.of(
+                "u x x x x x x x x x x x x x x x x x d",
+                "x x x x x x x x x x x x x x x x x x x",
+                "x x x x x x x x x x x x x x x x x x x"
+        ));
+        setStaticLines(0, 18);
+        setButton('x', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.DIAMOND).name("<aqua>Entry").build())
+                .build());
+        setPreviousLineButton('u', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Left").build())
+                .action((button, viewer, event) -> previousLine())
+                .build());
+        setNextLineButton('d', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Right").build())
                 .action((button, viewer, event) -> nextLine())
                 .build());
     }

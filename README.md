@@ -38,9 +38,9 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.5.2")
-    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.5.2")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.5.2")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.6.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.6.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.6.2")
 }
 ```
 
@@ -64,9 +64,9 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.5.2</version>
+        <version>1.6.2</version>
     </dependency>
-    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.5.2 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.6.2 -->
 </dependencies>
 ```
 
@@ -276,19 +276,26 @@ public final class PlayersMenu extends PaginatedMenu {
 }
 ```
 
-`ScrollingMenu` renders a fixed viewport over a larger content list. Configure content slots in display order, optionally set the line width, then wire previous/next line buttons that call `previousLine()` and `nextLine()`.
+### `ScrollingMenu`: vertical
+
+`ScrollingMenu` renders buttons from one content list into a viewport. `ScrollDirection.VERTICAL` is the default. With a virtual shape, `x` cells consume content row by row. Shape width cannot exceed nine columns; shape height may exceed visible menu rows. Each line change moves the viewport by one row. Navigation button slots are reserved from content rendering.
 
 ```java
 public final class ExampleScrollMenu extends ScrollingMenu {
     public ExampleScrollMenu(Player player, List<Button> entries) {
         super(player, "<green>Entries", 5);
 
-        setContentSlots(List.of(
-                2, 3, 4, 5, 6, 7,
-                11, 12, 13, 14, 15, 16,
-                20, 21, 22, 23, 24, 25
+        setContentShape(List.of(
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x",
+                "x x x x x x x x x"
         ));
-        setLineLength(6);
         setPreviousLineButton(0, Button.builder()
                 .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Up").build())
                 .action((button, viewer, event) -> previousLine())
@@ -302,7 +309,37 @@ public final class ExampleScrollMenu extends ScrollingMenu {
 }
 ```
 
-`StaticScrollingMenu` renders from a virtual layout. Static line indexes stay pinned in the visible chest rows while every other layout line scrolls. Up/down controls can name a fallback symbol, such as `#`, for the item to render when the control is hidden.
+### `ScrollingMenu`: horizontal
+
+Set direction before configuring a horizontal shape. `x` cells consume content column by column. Shape height cannot exceed visible menu rows; shape width may exceed nine columns. Each line change moves the viewport by one column. This example uses a fourth inventory row for fixed left/right controls.
+
+```java
+public final class HorizontalScrollMenu extends ScrollingMenu {
+    public HorizontalScrollMenu(Player player, List<Button> entries) {
+        super(player, "<green>Entries", 4);
+
+        setScrollDirection(ScrollDirection.HORIZONTAL);
+        setContentShape(List.of(
+                "x x x x x x x x x x x x x x x x x x x",
+                "x x x x x x x x x x x x x x x x x x x",
+                "x x x x x x x x x x x x x x x x x x x"
+        ));
+        setPreviousLineButton(27, Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Left").build())
+                .action((button, viewer, event) -> previousLine())
+                .build());
+        setNextLineButton(35, Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Right").build())
+                .action((button, viewer, event) -> nextLine())
+                .build());
+        setContent(entries);
+    }
+}
+```
+
+### `StaticScrollingMenu`: vertical
+
+`StaticScrollingMenu` maps layout symbols to buttons. `ScrollDirection.VERTICAL` is the default. Layouts are exactly nine columns wide and may exceed visible menu rows. `setStaticLines(...)` always accepts layout row indexes; those rows remain pinned while non-static rows move vertically. Navigation controls may use a fallback symbol, such as `#`, when hidden.
 
 ```java
 public final class ExampleStaticScrollMenu extends StaticScrollingMenu {
@@ -339,6 +376,40 @@ public final class ExampleStaticScrollMenu extends StaticScrollingMenu {
                 .build());
         setNextLineButton('d', '#', Button.builder()
                 .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Down").build())
+                .action((button, viewer, event) -> nextLine())
+                .build());
+    }
+}
+```
+
+### `StaticScrollingMenu`: horizontal
+
+Set horizontal direction before configuring the layout. Horizontal static layouts may exceed nine columns but cannot exceed visible menu rows. `setStaticLines(...)` still accepts row indexes: static rows render their first nine columns without shifting, while non-static rows shift left or right one column per line change. In this three-row layout, rows `0` and `2` stay fixed; only row `1` scrolls.
+
+```java
+public final class HorizontalStaticScrollMenu extends StaticScrollingMenu {
+    public HorizontalStaticScrollMenu(Player player) {
+        super(player, "<green>Entries", 3);
+
+        setScrollDirection(ScrollDirection.HORIZONTAL);
+        setLayout(List.of(
+                "u # # # # # # # d # # # # # # # # # #",
+                "x x x x x x x x x x x x x x x x x x x",
+                "# # # # # # # # # # # # # # # # # # #"
+        ));
+        setStaticLines(0, 2);
+        setButton('x', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.DIAMOND).name("<aqua>Entry").build())
+                .build());
+        setButton('#', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.BLACK_STAINED_GLASS_PANE).name(" ").build())
+                .build());
+        setPreviousLineButton('u', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Left").build())
+                .action((button, viewer, event) -> previousLine())
+                .build());
+        setNextLineButton('d', Button.builder()
+                .item(viewer -> ItemBuilder.of(Material.ARROW).name("<yellow>Right").build())
                 .action((button, viewer, event) -> nextLine())
                 .build());
     }

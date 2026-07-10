@@ -21,6 +21,40 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ScrollingMenuTest extends MockBukkitTest {
 
+    private static final List<String> HORIZONTAL_SHAPE = List.of(
+            "x x x x x x x x x x x x x x x x x x x",
+            "x x x x x x x x x x x x x x x x x x x",
+            "x x x x x x x x x x x x x x x x x x x"
+    );
+
+    private static final List<String> VERTICAL_SHAPE = List.of(
+            "x x x x x x x x x",
+            "x x x x x x x x x",
+            "x x x x x x x x x",
+            "x x x x x x x x x",
+            "x x x x x x x x x",
+            "x x x x x x x x x",
+            "x x x x x x x x x",
+            "x x x x x x x x x",
+            "x x x x x x x x x"
+    );
+
+    @Test
+    void verticalScrollingRemainsTheDefault() {
+        PlayerMock player = server.addPlayer();
+        TestScrollingMenu menu = new TestScrollingMenu(player, 2, List.of(0, 1, 2, 9, 10, 11));
+
+        menu.nextLineButton(17, button(Material.EMERALD));
+        menu.setContent(numberedButtons(8));
+        menu.refresh();
+
+        assertEquals(ScrollDirection.VERTICAL, menu.getScrollDirection());
+        assertItemAmount(menu.getInventory(), 0, 1);
+        assertItemAmount(menu.getInventory(), 1, 2);
+        assertItemAmount(menu.getInventory(), 2, 3);
+        assertItemAmount(menu.getInventory(), 9, 4);
+    }
+
     @Test
     void initialViewportRendersVisibleContentRows() {
         PlayerMock player = server.addPlayer();
@@ -59,6 +93,114 @@ class ScrollingMenuTest extends MockBukkitTest {
         assertItemAmount(inventory, 10, 8);
         assertNull(inventory.getItem(11));
         assertEquals(1, menu.getLine());
+    }
+
+    @Test
+    void horizontalScrollingFillsColumnsAndMovesByOneColumn() {
+        PlayerMock player = server.addPlayer();
+        TestScrollingMenu menu = new TestScrollingMenu(player, 2, List.of(0, 1, 2, 9, 10, 11));
+
+        menu.scrollDirection(ScrollDirection.HORIZONTAL);
+        menu.previousLineButton(16, button(Material.REDSTONE));
+        menu.nextLineButton(17, button(Material.EMERALD));
+        menu.setContent(numberedButtons(8));
+        menu.refresh();
+
+        Inventory inventory = menu.getInventory();
+        assertItemAmount(inventory, 0, 1);
+        assertItemAmount(inventory, 9, 2);
+        assertItemAmount(inventory, 1, 3);
+        assertItemAmount(inventory, 10, 4);
+        assertItemAmount(inventory, 2, 5);
+        assertItemAmount(inventory, 11, 6);
+        assertEquals(1, menu.getMaxLine());
+
+        menu.changeLine(99);
+
+        assertItemAmount(inventory, 0, 3);
+        assertItemAmount(inventory, 9, 4);
+        assertItemAmount(inventory, 1, 5);
+        assertItemAmount(inventory, 10, 6);
+        assertItemAmount(inventory, 2, 7);
+        assertItemAmount(inventory, 11, 8);
+        assertEquals(1, menu.getLine());
+    }
+
+    @Test
+    void horizontalScrollingHonorsExplicitLineLength() {
+        PlayerMock player = server.addPlayer();
+        TestScrollingMenu menu = new TestScrollingMenu(player, 3, List.of(0, 9, 1, 10, 19, 2, 11, 20));
+
+        menu.scrollDirection(ScrollDirection.HORIZONTAL);
+        menu.previousLineButton(25, button(Material.REDSTONE));
+        menu.nextLineButton(26, button(Material.EMERALD));
+        menu.setLineLengthForTest(3);
+        menu.setContent(numberedButtons(11));
+        menu.changeLine(1);
+
+        Inventory inventory = menu.getInventory();
+        assertItemAmount(inventory, 0, 4);
+        assertItemAmount(inventory, 9, 5);
+        assertItemAmount(inventory, 1, 6);
+        assertItemAmount(inventory, 10, 7);
+        assertItemAmount(inventory, 19, 8);
+        assertItemAmount(inventory, 2, 9);
+        assertItemAmount(inventory, 11, 10);
+        assertItemAmount(inventory, 20, 11);
+        assertEquals(1, menu.getMaxLine());
+    }
+
+    @Test
+    void horizontalShapeScrollsAcrossNineteenColumns() {
+        PlayerMock player = server.addPlayer();
+        TestScrollingMenu menu = new TestScrollingMenu(player, 4);
+
+        menu.scrollDirection(ScrollDirection.HORIZONTAL);
+        menu.contentShape(HORIZONTAL_SHAPE);
+        menu.previousLineButton(27, button(Material.REDSTONE));
+        menu.nextLineButton(35, button(Material.EMERALD));
+        menu.setContent(numberedButtons(57));
+        menu.refresh();
+
+        Inventory inventory = menu.getInventory();
+        assertItemAmount(inventory, 0, 1);
+        assertItemAmount(inventory, 9, 2);
+        assertItemAmount(inventory, 18, 3);
+        assertItemAmount(inventory, 8, 25);
+        assertEquals(10, menu.getMaxLine());
+
+        menu.changeLine(10);
+
+        assertItemAmount(inventory, 0, 31);
+        assertItemAmount(inventory, 9, 32);
+        assertItemAmount(inventory, 18, 33);
+        assertItemAmount(inventory, 8, 55);
+        assertEquals(10, menu.getLine());
+    }
+
+    @Test
+    void verticalShapeScrollsAcrossNineRows() {
+        PlayerMock player = server.addPlayer();
+        TestScrollingMenu menu = new TestScrollingMenu(player, 6);
+
+        menu.contentShape(VERTICAL_SHAPE);
+        menu.previousLineButton(52, button(Material.REDSTONE));
+        menu.nextLineButton(53, button(Material.EMERALD));
+        menu.setContent(numberedButtons(81));
+        menu.refresh();
+
+        Inventory inventory = menu.getInventory();
+        assertItemAmount(inventory, 0, 1);
+        assertItemAmount(inventory, 8, 9);
+        assertItemAmount(inventory, 45, 46);
+        assertEquals(3, menu.getMaxLine());
+
+        menu.changeLine(3);
+
+        assertItemAmount(inventory, 0, 28);
+        assertItemAmount(inventory, 8, 36);
+        assertItemAmount(inventory, 27, 55);
+        assertEquals(3, menu.getLine());
     }
 
     @Test
@@ -203,9 +345,17 @@ class ScrollingMenuTest extends MockBukkitTest {
 
     private static final class TestScrollingMenu extends ScrollingMenu {
 
+        private TestScrollingMenu(Player player, int rows) {
+            super(player, "Test", rows);
+        }
+
         private TestScrollingMenu(Player player, int rows, List<Integer> contentSlots) {
             super(player, "Test", rows);
             setContentSlots(contentSlots);
+        }
+
+        private void contentShape(List<String> rows) {
+            setContentShape(rows);
         }
 
         private void nextLineButton(int slot, Button button) {
@@ -218,6 +368,10 @@ class ScrollingMenuTest extends MockBukkitTest {
 
         private void setLineLengthForTest(int lineLength) {
             setLineLength(lineLength);
+        }
+
+        private void scrollDirection(ScrollDirection scrollDirection) {
+            setScrollDirection(scrollDirection);
         }
     }
 }

@@ -16,6 +16,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StaticScrollingMenuTest extends MockBukkitTest {
@@ -33,6 +34,24 @@ class StaticScrollingMenuTest extends MockBukkitTest {
             "# # a # # # b # #",
             "# # a # # # b # #",
             "# # u # x # d # #"
+    );
+
+    private static final List<String> HORIZONTAL_LAYOUT = List.of(
+            "u # # # # # # # d # # # # # # # # # #",
+            "1 2 3 4 5 6 7 8 9 A B C D E F G H I J",
+            "# # # # # # # # # # # # # # # # # # #"
+    );
+
+    private static final List<String> VERTICAL_LAYOUT = List.of(
+            "a a a a a a a a a",
+            "b b b b b b b b b",
+            "c c c c c c c c c",
+            "d d d d d d d d d",
+            "e e e e e e e e e",
+            "f f f f f f f f f",
+            "g g g g g g g g g",
+            "h h h h h h h h h",
+            "i i i i i i i i i"
     );
 
     @Test
@@ -159,6 +178,66 @@ class StaticScrollingMenuTest extends MockBukkitTest {
         assertItem(inventory, 22, Material.BARRIER);
     }
 
+    @Test
+    void horizontalLayoutScrollsNonStaticRowsAcrossNineteenColumns() {
+        PlayerMock player = server.addPlayer();
+        TestStaticScrollingMenu menu = new TestStaticScrollingMenu(player, 3);
+
+        menu.scrollDirection(ScrollDirection.HORIZONTAL);
+        menu.layout(HORIZONTAL_LAYOUT);
+        assertThrows(IllegalArgumentException.class, () -> menu.staticLines(18));
+        menu.staticLines(0, 2);
+        menu.button('1', button(Material.DIAMOND));
+        menu.button('B', button(Material.GOLD_INGOT));
+        menu.button('I', button(Material.LAPIS_LAZULI));
+        menu.button('#', button(Material.GRAY_STAINED_GLASS_PANE));
+        menu.previousLineButton('u', button(Material.REDSTONE));
+        menu.nextLineButton('d', button(Material.ARROW));
+        menu.refresh();
+
+        Inventory inventory = menu.getInventory();
+        assertEquals(ScrollDirection.HORIZONTAL, menu.getScrollDirection());
+        assertNull(inventory.getItem(0));
+        assertItem(inventory, 8, Material.ARROW);
+        assertItem(inventory, 9, Material.DIAMOND);
+        assertItem(inventory, 18, Material.GRAY_STAINED_GLASS_PANE);
+        assertEquals(10, menu.getMaxLine());
+
+        menu.changeLine(10);
+
+        assertItem(inventory, 0, Material.REDSTONE);
+        assertNull(inventory.getItem(8));
+        assertItem(inventory, 9, Material.GOLD_INGOT);
+        assertItem(inventory, 16, Material.LAPIS_LAZULI);
+        assertItem(inventory, 18, Material.GRAY_STAINED_GLASS_PANE);
+        assertEquals(10, menu.getLine());
+    }
+
+    @Test
+    void verticalLayoutScrollsAcrossNineRows() {
+        PlayerMock player = server.addPlayer();
+        TestStaticScrollingMenu menu = new TestStaticScrollingMenu(player, 6);
+
+        menu.layout(VERTICAL_LAYOUT);
+        menu.button('a', button(Material.DIAMOND));
+        menu.button('d', button(Material.GOLD_INGOT));
+        menu.button('f', button(Material.IRON_INGOT));
+        menu.button('i', button(Material.LAPIS_LAZULI));
+        menu.refresh();
+
+        Inventory inventory = menu.getInventory();
+        assertEquals(ScrollDirection.VERTICAL, menu.getScrollDirection());
+        assertItem(inventory, 0, Material.DIAMOND);
+        assertItem(inventory, 45, Material.IRON_INGOT);
+        assertEquals(3, menu.getMaxLine());
+
+        menu.changeLine(3);
+
+        assertItem(inventory, 0, Material.GOLD_INGOT);
+        assertItem(inventory, 45, Material.LAPIS_LAZULI);
+        assertEquals(3, menu.getLine());
+    }
+
     private static TestStaticScrollingMenu sampleMenu(Player player) {
         TestStaticScrollingMenu menu = new TestStaticScrollingMenu(player, 6);
         menu.layout(SAMPLE_LAYOUT);
@@ -194,6 +273,10 @@ class StaticScrollingMenuTest extends MockBukkitTest {
 
         private void layout(List<String> layout) {
             setLayout(layout);
+        }
+
+        private void scrollDirection(ScrollDirection scrollDirection) {
+            setScrollDirection(scrollDirection);
         }
 
         private void staticLines(Integer... lines) {

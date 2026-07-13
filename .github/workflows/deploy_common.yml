@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - '**'
+  release:
+    types:
+      - published
 
 jobs:
   deploy_common:
@@ -33,17 +36,17 @@ jobs:
           EOF
 
       - name: Modify common version for release
-        if: github.ref == 'refs/heads/release'
+        if: github.event_name == 'release'
         run: |
           sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" common/build.gradle.kts
 
       - name: Modify common version for snapshot
-        if: github.ref == 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" common/build.gradle.kts
 
       - name: Modify common version for experimental
-        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
         run: |
           short_sha="${GITHUB_SHA::7}"
           sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" common/build.gradle.kts
@@ -53,15 +56,15 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build and deploy common release
-        if: github.ref == 'refs/heads/release'
+        if: github.event_name == 'release'
         run: ./gradlew clean :common:publish -PisRelease=true
 
       - name: Build and deploy common snapshot
-        if: github.ref == 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: ./gradlew clean :common:publish -PisRelease=false
 
       - name: Build and deploy common experimental
-        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
         run: ./gradlew clean :common:publish -PisRelease=false -PnexusSnapshotsUrl=https://repo.moonrise.gg/repository/experimental
 
   deploy_paper:
@@ -92,17 +95,17 @@ jobs:
           EOF
 
       - name: Modify paper version for release
-        if: github.ref == 'refs/heads/release'
+        if: github.event_name == 'release'
         run: |
           sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" paper/build.gradle.kts
 
       - name: Modify paper version for snapshot
-        if: github.ref == 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" paper/build.gradle.kts
 
       - name: Modify paper version for experimental
-        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
         run: |
           short_sha="${GITHUB_SHA::7}"
           sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" paper/build.gradle.kts
@@ -112,15 +115,15 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build and deploy paper release
-        if: github.ref == 'refs/heads/release'
+        if: github.event_name == 'release'
         run: ./gradlew clean :paper:publish -PisRelease=true
 
       - name: Build and deploy paper snapshot
-        if: github.ref == 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: ./gradlew clean :paper:publish -PisRelease=false
 
       - name: Build and deploy paper experimental
-        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
         run: ./gradlew clean :paper:publish -PisRelease=false -PnexusSnapshotsUrl=https://repo.moonrise.gg/repository/experimental
 
   deploy_bungee:
@@ -151,17 +154,17 @@ jobs:
           EOF
 
       - name: Modify bungee version for release
-        if: github.ref == 'refs/heads/release'
+        if: github.event_name == 'release'
         run: |
           sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" bungeecord/build.gradle.kts
 
       - name: Modify bungee version for snapshot
-        if: github.ref == 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" bungeecord/build.gradle.kts
 
       - name: Modify bungee version for experimental
-        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
         run: |
           short_sha="${GITHUB_SHA::7}"
           sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" bungeecord/build.gradle.kts
@@ -171,13 +174,13 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build and deploy bungee release
-        if: github.ref == 'refs/heads/release'
+        if: github.event_name == 'release'
         run: ./gradlew clean :bungeecord:publish -PisRelease=true
 
       - name: Build and deploy bungee snapshot
-        if: github.ref == 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: ./gradlew clean :bungeecord:publish -PisRelease=false
 
       - name: Build and deploy bungee experimental
-        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
         run: ./gradlew clean :bungeecord:publish -PisRelease=false -PnexusSnapshotsUrl=https://repo.moonrise.gg/repository/experimental

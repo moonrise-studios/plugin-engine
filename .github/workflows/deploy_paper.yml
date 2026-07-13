@@ -34,18 +34,13 @@ jobs:
           nexusReleasesUrl=https://repo.moonrise.gg/repository/maven-releases
           EOF
 
-      - name: Modify paper version for release
-        if: github.ref == 'refs/heads/release'
-        run: |
-          sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" paper/build.gradle.kts
-
       - name: Modify paper version for snapshot
-        if: github.ref == 'refs/heads/snapshot'
+        if: github.ref == 'refs/heads/main'
         run: |
           sed -i "/var apiVersion = \\\".*-SNAPSHOT\\\"/! s/\\(var apiVersion = \\\"[^\\\"]*\\)\\\"/\\1-SNAPSHOT\\\"/" paper/build.gradle.kts
 
       - name: Modify paper version for experimental
-        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        if: github.ref != 'refs/heads/main'
         run: |
           short_sha="${GITHUB_SHA::7}"
           sed -i "s/\\(var apiVersion = \\\"[^\\\"]*\\)-SNAPSHOT\\\"/\\1\\\"/" paper/build.gradle.kts
@@ -54,14 +49,10 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build and deploy paper release
-        if: github.ref == 'refs/heads/release'
-        run: ./gradlew clean :paper:publish -PisRelease=true
-
       - name: Build and deploy paper snapshot
-        if: github.ref == 'refs/heads/snapshot'
+        if: github.ref == 'refs/heads/main'
         run: ./gradlew clean :paper:publish -PisRelease=false
 
       - name: Build and deploy paper experimental
-        if: github.ref != 'refs/heads/release' && github.ref != 'refs/heads/snapshot'
+        if: github.ref != 'refs/heads/main'
         run: ./gradlew clean :paper:publish -PisRelease=false -PnexusSnapshotsUrl=https://repo.moonrise.gg/repository/experimental

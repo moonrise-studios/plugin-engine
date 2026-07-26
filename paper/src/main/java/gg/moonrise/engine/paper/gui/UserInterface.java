@@ -8,6 +8,7 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,9 @@ import java.util.Map;
  */
 
 public interface UserInterface {
+
+    /** Default delay between handled button interactions. */
+    Duration DEFAULT_INTERACTION_COOLDOWN = Duration.ofMillis(250);
 
     /**
      * Called when a player opens an inventory.

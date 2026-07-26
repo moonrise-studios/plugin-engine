@@ -1,5 +1,6 @@
 package gg.moonrise.engine.paper.gui.util;
 
+import gg.moonrise.engine.paper.cooldown.Cooldowns;
 import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.scheduler.Scheduler;
 import org.bukkit.entity.Player;
@@ -10,7 +11,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -20,12 +23,47 @@ public final class MenuInteractionUtil {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 
+    /**
+     * Processes a menu click without cooldown handling.
+     *
+     * @param cancelClicks whether to cancel the inventory click
+     * @param buttonById buttons keyed by their rendered identifiers
+     * @param player player interacting with the menu
+     * @param event inventory click event
+     */
     public static void processClick(
             boolean cancelClicks,
             Map<UUID, Button> buttonById,
             Player player,
             InventoryClickEvent event
     ) {
+        processClick(cancelClicks, buttonById, player, event, Duration.ZERO, "");
+    }
+
+    /**
+     * Processes a menu click using optional per-menu cooldown state.
+     *
+     * @param cancelClicks whether to cancel the inventory click
+     * @param buttonById buttons keyed by their rendered identifiers
+     * @param player player interacting with the menu
+     * @param event inventory click event
+     * @param interactionCooldown non-negative interaction cooldown
+     * @param interactionCooldownKey key unique to the menu instance
+     */
+    public static void processClick(
+            boolean cancelClicks,
+            Map<UUID, Button> buttonById,
+            Player player,
+            InventoryClickEvent event,
+            Duration interactionCooldown,
+            String interactionCooldownKey
+    ) {
+        Objects.requireNonNull(interactionCooldown, "interactionCooldown");
+        Objects.requireNonNull(interactionCooldownKey, "interactionCooldownKey");
+        if (interactionCooldown.isNegative()) {
+            throw new IllegalArgumentException("Interaction cooldown cannot be negative.");
+        }
+
         if (cancelClicks) {
             event.setCancelled(true);
             event.setResult(Event.Result.DENY);
@@ -39,6 +77,13 @@ public final class MenuInteractionUtil {
 
         Button button = buttonById.get(id);
         if (button == null) return;
+        if (button.clickAction() == null) return;
+
+        if (!interactionCooldown.isZero()) {
+            UUID playerUuid = player.getUniqueId();
+            if (Cooldowns.isOnCooldown(playerUuid, interactionCooldownKey)) return;
+            Cooldowns.addCooldown(playerUuid, interactionCooldownKey, interactionCooldown);
+        }
 
         button.processClickAction(player, event);
     }

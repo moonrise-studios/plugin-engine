@@ -38,9 +38,9 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.6.2")
-    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.6.2")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.6.2")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.7.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.7.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.7.2")
 }
 ```
 
@@ -64,9 +64,9 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.6.2</version>
+        <version>1.7.2</version>
     </dependency>
-    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.6.2 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.7.2 -->
 </dependencies>
 ```
 
@@ -210,6 +210,9 @@ public final class ExampleMenu extends ChestMenu {
     public ExampleMenu(Player player) {
         super(player, "<green>Example", 3);
 
+        // Menus default to 250 ms between handled button interactions.
+        setInteractionCooldown(Duration.ofSeconds(1));
+
         MenuLayout layout = MenuLayout.chest(
                 "# # # # # # # # #",
                 "# . . . . . . . #",
@@ -229,6 +232,9 @@ public final class ExampleMenu extends ChestMenu {
     }
 }
 ```
+
+The interaction cooldown applies only when a registered button has a click action. Empty slots and
+buttons without actions do not start it. Use `Duration.ZERO` to disable the cooldown for a menu.
 
 Menus are backed by Bukkit `InventoryHolder` instances and handled by `PlayerInventoryController`.
 

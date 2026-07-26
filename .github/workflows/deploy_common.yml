@@ -10,7 +10,7 @@ on:
 
 jobs:
   deploy_common:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -69,7 +69,7 @@ jobs:
 
   deploy_paper:
     needs: deploy_common
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -128,7 +128,7 @@ jobs:
 
   deploy_bungee:
     needs: deploy_common
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code

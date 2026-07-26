@@ -36,4 +36,15 @@ class CooldownsTest extends MockBukkitTest {
 
         assertFalse(Cooldowns.isOnCooldown(player.getUniqueId(), key));
     }
+
+    @Test
+    void cooldownCanBeRemovedByKey() {
+        PlayerMock player = server.addPlayer();
+        String key = "removable-action";
+        Cooldowns.addCooldown(player.getUniqueId(), key, Duration.ofMinutes(1));
+
+        Cooldowns.removeCooldown(player.getUniqueId(), key);
+
+        assertFalse(Cooldowns.isOnCooldown(player.getUniqueId(), key));
+    }
 }

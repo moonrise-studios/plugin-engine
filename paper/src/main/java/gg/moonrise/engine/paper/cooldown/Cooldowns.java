@@ -51,10 +51,18 @@ public class Cooldowns implements Listener {
         return COOLDOWNS.contains(uuid, key) && COOLDOWNS.get(uuid, key) > System.currentTimeMillis();
     }
 
+    /**
+     * Removes a cooldown for the specified UUID and key.
+     * @param uuid UUID of the entity
+     * @param key Cooldown key
+     */
+    public static void removeCooldown(UUID uuid, String key) {
+        COOLDOWNS.remove(uuid, key);
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         COOLDOWNS.row(event.getPlayer().getUniqueId()).clear();
     }
 
 }
-

@@ -2,6 +2,7 @@ package gg.moonrise.engine.paper.gui;
 
 import com.google.common.base.Preconditions;
 import gg.moonrise.engine.message.util.MiniMessageUtil;
+import gg.moonrise.engine.paper.cooldown.Cooldowns;
 import gg.moonrise.engine.paper.gui.button.Button;
 import gg.moonrise.engine.paper.gui.holder.ScrollingMenuHolder;
 import gg.moonrise.engine.paper.gui.layout.ContentSlotOrder;
@@ -19,6 +20,7 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 
@@ -47,6 +49,8 @@ public abstract class ScrollingMenu implements ChestInterface {
     private final List<Integer> contentSlots = new ArrayList<>();
     private final List<Button> content = new ArrayList<>();
     private final Map<Integer, Button> refreshingContentButtons = new HashMap<>();
+    private final String interactionCooldownKey = "menu-interaction:" + UUID.randomUUID();
+    private Duration interactionCooldown = DEFAULT_INTERACTION_COOLDOWN;
 
     private MenuLayout contentShape;
     private char contentShapeKey = 'x';
@@ -82,6 +86,18 @@ public abstract class ScrollingMenu implements ChestInterface {
      */
     protected void setTitle(String title) {
         this.title = MiniMessageUtil.fromText(title);
+    }
+
+    /**
+     * Sets the minimum delay between handled button interactions.
+     *
+     * @param duration the non-negative interaction cooldown
+     */
+    protected void setInteractionCooldown(Duration duration) {
+        Objects.requireNonNull(duration, "duration");
+        Preconditions.checkArgument(!duration.isNegative(), "Interaction cooldown cannot be negative.");
+        Cooldowns.removeCooldown(player.getUniqueId(), interactionCooldownKey);
+        interactionCooldown = duration;
     }
 
     /**
@@ -251,7 +267,9 @@ public abstract class ScrollingMenu implements ChestInterface {
      */
     @Override
     public void onClick(Player player, InventoryClickEvent event) {
-        MenuInteractionUtil.processClick(cancelClicks, buttonById, player, event);
+        MenuInteractionUtil.processClick(
+                cancelClicks, buttonById, player, event, interactionCooldown, interactionCooldownKey
+        );
     }
 
     /**
@@ -267,6 +285,7 @@ public abstract class ScrollingMenu implements ChestInterface {
      */
     @Override
     public void invalidate() {
+        Cooldowns.removeCooldown(player.getUniqueId(), interactionCooldownKey);
         inventory = null;
         clearButtons();
     }

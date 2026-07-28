@@ -19,6 +19,7 @@ Organization: https://github.com/moonrise-studios
 
 - Java 21
 - Paper API `1.21.8-R0.1-SNAPSHOT` (for the `paper` module)
+- Paper 26.2 command registration through Cloud Paper `2.0.0`
 - BungeeCord API `1.21-R0.5-SNAPSHOT` (for the `bungeecord` module)
 
 ## Installation
@@ -38,9 +39,9 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.7.2")
-    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.7.2")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.7.2")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.7.3")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.7.3")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.7.3")
 }
 ```
 
@@ -64,9 +65,9 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.7.2</version>
+        <version>1.7.3</version>
     </dependency>
-    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.7.2 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.7.3 -->
 </dependencies>
 ```
 

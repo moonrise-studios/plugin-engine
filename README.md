@@ -1,19 +1,20 @@
 # plugin-engine
 
-A Java 21 library for building Minecraft Paper and BungeeCord plugins with reusable building blocks for commands, scheduling, GUIs, messaging, configuration, and utility helpers.
+A Java 21 library for building Minecraft Paper, BungeeCord, and Velocity plugins with reusable building blocks for commands, scheduling, GUIs, messaging, configuration, and utility helpers.
 
 Source repo: https://github.com/moonrise-studios/plugin-engine  
 Organization: https://github.com/moonrise-studios
 
 ## What this library provides
 
-`plugin-engine` is split into three modules:
+`plugin-engine` is split into four modules:
 
 | Module | Artifact | Purpose |
 | --- | --- | --- |
 | common | `gg.moonrise.engine:plugin-engine-common` | Platform-agnostic APIs and helpers (configuration, messages, command abstractions, utilities). |
 | paper | `gg.moonrise.engine:plugin-engine-paper` | Paper-specific implementations (plugin base class, schedulers, command registration, GUI framework, item builder, jobs). |
 | bungeecord | `gg.moonrise.engine:plugin-engine-bungeecord` | BungeeCord-specific implementations (plugin base class, listener registration, Cloud command registration). |
+| velocity | `gg.moonrise.engine:plugin-engine-velocity` | Velocity-specific implementations (plugin base class, lifecycle integration, audiences, Cloud command registration). |
 
 ## Compatibility
 
@@ -21,6 +22,7 @@ Organization: https://github.com/moonrise-studios
 - Paper API `1.21.8-R0.1-SNAPSHOT` (for the `paper` module)
 - Paper 26.2 command registration through Cloud Paper `2.0.0`
 - BungeeCord API `1.21-R0.5-SNAPSHOT` (for the `bungeecord` module)
+- Velocity API `3.4.0-SNAPSHOT` and Cloud Velocity `2.0.0-beta.10` (for the `velocity` module)
 
 ## Installation
 
@@ -41,6 +43,7 @@ Then add dependencies:
 dependencies {
     implementation("gg.moonrise.engine:plugin-engine-paper:1.7.3")
     // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.7.3")
+    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.7.3")
     // or: implementation("gg.moonrise.engine:plugin-engine-common:1.7.3")
 }
 ```
@@ -68,6 +71,7 @@ dependencies {
         <version>1.7.3</version>
     </dependency>
     <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.7.3 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.7.3 -->
 </dependencies>
 ```
 
@@ -101,7 +105,50 @@ public final class ExampleProxyPlugin extends BungeePlugin {
 
 `BungeePlugin` initializes MiniMessage utilities, registers BungeeCord listener beans, and exposes the shared `Plugin` contract (`directory()`, `fetchBeans(...)`).
 
-### 2) Optional Paper library loader
+## Quick start (Velocity plugins)
+
+Velocity injects the proxy and plugin-owned data directory into your concrete plugin. Pass both to `VelocityPlugin` so Spring components can safely use `directory()` during initialization:
+
+Your plugin build must also declare Velocity API as both `compileOnly` and `annotationProcessor` so Velocity generates its plugin metadata:
+
+```kotlin
+dependencies {
+    implementation("gg.moonrise.engine:plugin-engine-velocity:1.7.3")
+    implementation("gg.moonrise.moss:moss-velocity:1.2.3")
+    implementation("org.springframework:spring-context:6.2.13")
+    implementation("org.incendo:cloud-annotations:2.0.0")
+    implementation("org.incendo:cloud-velocity:2.0.0-beta.10")
+    compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
+    annotationProcessor("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
+}
+```
+
+Shade and relocate non-platform runtime dependencies in your plugin JAR to avoid conflicts with other Velocity plugins.
+
+```java
+package com.example;
+
+import com.google.inject.Inject;
+import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.annotation.DataDirectory;
+import com.velocitypowered.api.proxy.ProxyServer;
+import gg.moonrise.engine.velocity.VelocityPlugin;
+
+import java.nio.file.Path;
+
+@Plugin(id = "example", name = "Example", version = "1.0.0")
+public final class ExampleVelocityPlugin extends VelocityPlugin {
+
+    @Inject
+    public ExampleVelocityPlugin(ProxyServer server, @DataDirectory Path dataDirectory) {
+        super(server, dataDirectory);
+    }
+}
+```
+
+`VelocityPlugin` starts its Moss/Spring context during `ProxyInitializeEvent`, initializes MiniMessage utilities, auto-registers Moss Velocity listener beans, and exposes the shared `Plugin` contract. Listener beans implement `gg.moonrise.moss.velocity.spring.Listener` and use Velocity's `@Subscribe` methods.
+
+## Optional Paper library loader
 
 If you need extra runtime libraries, extend `PaperPluginLoader`:
 
@@ -162,6 +209,28 @@ public final class ExampleProxyCommand implements BungeeCordCommand {
     @Command("exampleproxy")
     @CommandDescription("Example proxy command")
     public void example(CommandSender sender) {
+
+    }
+}
+```
+
+`velocity` includes `VelocityCommandRegistry`, which auto-discovers Spring beans implementing `VelocityCommand` plus shared `CloudArgument` parsers.
+
+```java
+package com.example.command;
+
+import com.velocitypowered.api.command.CommandSource;
+import gg.moonrise.engine.velocity.command.VelocityCommand;
+import gg.moonrise.moss.spring.SpringComponent;
+import org.incendo.cloud.annotations.Command;
+import org.incendo.cloud.annotations.CommandDescription;
+
+@SpringComponent
+public final class ExampleVelocityCommand implements VelocityCommand {
+
+    @Command("exampleproxy")
+    @CommandDescription("Example Velocity command")
+    public void example(CommandSource source) {
 
     }
 }

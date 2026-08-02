@@ -318,13 +318,11 @@ public abstract class ScrollingMenu implements ChestInterface {
         if (contentShape == null) renderSlotContent();
         else renderShapeContent();
 
-        if (hasNextLine) {
-            Preconditions.checkNotNull(nextLineButton, "Next Line Button cannot be null.");
+        if (hasNextLine && nextLineButton != null) {
             renderButtonToSlot(nextLineButton.getKey(), nextLineButton.getValue());
         }
 
-        if (hasPreviousLine) {
-            Preconditions.checkNotNull(previousLineButton, "Previous Line Button cannot be null.");
+        if (hasPreviousLine && previousLineButton != null) {
             renderButtonToSlot(previousLineButton.getKey(), previousLineButton.getValue());
         }
     }

@@ -46,10 +46,10 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.8.3")
-    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.8.3")
-    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.8.3")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.8.3")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.8.4")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.8.4")
+    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.8.4")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.8.4")
 }
 ```
 
@@ -73,10 +73,10 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.8.3</version>
+        <version>1.8.4</version>
     </dependency>
-    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.8.3 -->
-    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.8.3 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.8.4 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.8.4 -->
 </dependencies>
 ```
 
@@ -118,7 +118,7 @@ Your plugin build must also declare Velocity API as both `compileOnly` and `anno
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-velocity:1.8.3")
+    implementation("gg.moonrise.engine:plugin-engine-velocity:1.8.4")
     implementation("gg.moonrise.moss:moss-velocity:1.2.3")
     implementation("org.springframework:spring-context:6.2.13")
     implementation("org.incendo:cloud-annotations:2.0.0")

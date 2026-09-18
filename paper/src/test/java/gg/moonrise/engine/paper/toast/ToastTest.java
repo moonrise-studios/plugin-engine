@@ -3,7 +3,10 @@ package gg.moonrise.engine.paper.toast;
 import gg.moonrise.engine.message.Message;
 import gg.moonrise.engine.paper.support.MockBukkitTest;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -127,6 +130,79 @@ public class ToastTest extends MockBukkitTest {
     }
 
     @Test
+    public void resolvesJavaLineForTwoLines() {
+        PlayerMock player = server.addPlayer("Eric");
+        Toast toast = Toast.builder()
+                .title("Title")
+                .content("Content")
+                .javaLine(ToastJavaLine.TWO_LINES)
+                .build();
+
+        Component resolved = toast.javaComponent(player);
+
+        assertEquals("Title\nContent", PLAIN.serialize(resolved));
+        assertTrue(containsNewlineComponent(resolved), "the component tree must contain a literal newline component");
+    }
+
+    @Test
+    public void fallsBackToTitleOnlyForTwoLinesWithoutContent() {
+        PlayerMock player = server.addPlayer("Eric");
+        Toast toast = Toast.builder().title("Title").javaLine(ToastJavaLine.TWO_LINES).build();
+
+        Component resolved = toast.javaComponent(player);
+
+        assertEquals("Title", PLAIN.serialize(resolved));
+        assertFalse(containsNewlineComponent(resolved));
+    }
+
+    @Test
+    public void doesNotLeakTitleStyleIntoContentForTwoLines() {
+        PlayerMock player = server.addPlayer("Eric");
+        Toast toast = Toast.builder()
+                .title(Component.text("Title", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
+                .content(Component.text("Content", NamedTextColor.WHITE))
+                .javaLine(ToastJavaLine.TWO_LINES)
+                .build();
+
+        Component resolved = toast.javaComponent(player);
+        Component content = resolved.children().get(2);
+
+        assertEquals(Style.empty(), resolved.style(), "the joining parent must be unstyled");
+        assertEquals("Content", PLAIN.serialize(content));
+        assertEquals(NamedTextColor.WHITE, content.color());
+        assertEquals(TextDecoration.State.NOT_SET, content.decoration(TextDecoration.BOLD));
+    }
+
+    @Test
+    public void doesNotLeakTitleStyleIntoContentForBoth() {
+        PlayerMock player = server.addPlayer("Eric");
+        Toast toast = Toast.builder()
+                .title(Component.text("Title", NamedTextColor.GREEN).decorate(TextDecoration.BOLD))
+                .content(Component.text("Content", NamedTextColor.WHITE))
+                .javaLine(ToastJavaLine.BOTH)
+                .build();
+
+        Component resolved = toast.javaComponent(player);
+        Component content = resolved.children().get(2);
+
+        assertEquals(Style.empty(), resolved.style(), "the joining parent must be unstyled");
+        assertEquals(NamedTextColor.WHITE, content.color());
+        assertEquals(TextDecoration.State.NOT_SET, content.decoration(TextDecoration.BOLD));
+    }
+
+    @Test
+    public void keepsBedrockTextIndependentOfJavaLine() {
+        PlayerMock player = server.addPlayer("Eric");
+
+        for (ToastJavaLine javaLine : ToastJavaLine.values()) {
+            Toast toast = Toast.builder().title("Title").content("Content").javaLine(javaLine).build();
+
+            assertEquals("Title", toast.bedrockTitle(player));
+            assertEquals("Content", toast.bedrockContent(player));
+        }
+    }
+
+    @Test
     public void fallsBackToTitleWhenContentIsMissing() {
         PlayerMock player = server.addPlayer("Eric");
 
@@ -163,6 +239,12 @@ public class ToastTest extends MockBukkitTest {
         Toast toast = Toast.builder().title("Hello").build();
 
         assertEquals("", toast.bedrockContent(player));
+    }
+
+    private static boolean containsNewlineComponent(Component component) {
+        if (component instanceof TextComponent text && text.content().contains("\n")) return true;
+
+        return component.children().stream().anyMatch(ToastTest::containsNewlineComponent);
     }
 
     @Test

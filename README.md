@@ -553,7 +553,34 @@ ToastResult result = Toasts.send(player, Toast.builder()
 
 `title` and `content` accept a MiniMessage `String`, an Adventure `Component`, or a `Message`. `icon` accepts a
 `Material` or an `ItemStack` and defaults to `PAPER`. `frame` is `TASK` (default), `GOAL`, or `CHALLENGE`. `javaLine`
-is `TITLE` (default), `CONTENT`, or `BOTH`. `ToastResult` reports which path ran: `BEDROCK`, `JAVA`, or `UNSUPPORTED`.
+is `TITLE` (default), `CONTENT`, `BOTH` (title and content joined by a space), or `TWO_LINES` (title and content as two
+explicit lines). `ToastResult` reports which path ran: `BEDROCK`, `JAVA`, or `UNSUPPORTED`.
+
+### Two custom lines on Java Edition
+
+`TWO_LINES` gives Java Edition players two fully custom lines without a resource pack:
+
+```java
+Toasts.send(player, Toast.builder()
+        .title("<gold>Quest Complete!")
+        .content("<white>Construction Worker Quest")
+        .frame(ToastFrame.CHALLENGE)
+        .javaLine(ToastJavaLine.TWO_LINES)
+        .build());
+```
+
+The client splits the advancement title at 125 px per line. When the split produces two or more lines, the toast shows
+the fixed frame header (`Advancement Made!`, `Goal Reached!`, `Challenge Complete!`) for roughly the first 1.5 seconds,
+fades it out, and then draws the custom lines in its place for the rest of the 5 second display. Forcing a line break
+therefore makes both toast lines custom in the steady state.
+
+Each line is still limited to 125 px and may wrap further, so keep both lines short. The frame keeps controlling the
+sound and the colour of the brief header. The only way to change the header text itself is a resource-pack language
+override of `advancements.toast.task`, `advancements.toast.goal`, or `advancements.toast.challenge`, which the engine
+does not manage.
+
+This behaviour is read from the client's advancement toast rendering and is covered by unit tests at the packet level.
+It has not been verified against a live Java Edition client.
 
 Routing works in this order:
 
@@ -572,7 +599,7 @@ All three integrations are optional.
 
 | Platform | First line | Second line | Icon | Formatting |
 | --- | --- | --- | --- | --- |
-| Java | Fixed by the frame (`Advancement Made!`, `Goal Reached!`, `Challenge Complete!`) | One custom line, chosen by `javaLine` | Custom item icon | Full Adventure components |
+| Java | Fixed by the frame (`Advancement Made!`, `Goal Reached!`, `Challenge Complete!`), or with `javaLine = TWO_LINES` only for the first ~1.5 s before the custom lines replace it | One custom line, chosen by `javaLine`; two custom lines with `TWO_LINES` | Custom item icon | Full Adventure components |
 | Bedrock | Custom | Custom | None | Legacy section-sign formatting; hex colours are downsampled |
 
 When Geyser runs on a Velocity or BungeeCord proxy, or standalone, the backend has no Geyser API. If Floodgate is

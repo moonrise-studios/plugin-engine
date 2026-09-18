@@ -99,7 +99,7 @@ public final class Toast {
     }
 
     /**
-     * Resolves the single line shown on a Java Edition toast, honouring the configured
+     * Resolves the text shown on a Java Edition toast, honouring the configured
      * {@link ToastJavaLine} and falling back to the other part when the selected one is absent.
      * @param viewer the player the toast is rendered for
      * @return the component rendered as the advancement title
@@ -113,8 +113,23 @@ public final class Toast {
             case CONTENT -> contentComponent == null ? titleComponent : contentComponent;
             case BOTH -> contentComponent == null
                     ? titleComponent
-                    : titleComponent.append(Component.space()).append(contentComponent);
+                    : join(titleComponent, Component.space(), contentComponent);
+            case TWO_LINES -> contentComponent == null
+                    ? titleComponent
+                    : join(titleComponent, Component.newline(), contentComponent);
         };
+    }
+
+    /**
+     * Joins two parts under an unstyled parent so neither part inherits the other's colours or
+     * decorations.
+     */
+    private static Component join(Component first, Component separator, Component second) {
+        return Component.text()
+                .append(first)
+                .append(separator)
+                .append(second)
+                .build();
     }
 
     /**

@@ -102,6 +102,17 @@ public class PacketEventsToastSenderTest extends MockBukkitTest {
     }
 
     @Test
+    public void grantPacketCarriesTheLineBreakForTwoLines() {
+        AdvancementDisplay display = display(Toast.builder()
+                .title("<gold>Quest Complete!")
+                .content("<white>Construction Worker Quest")
+                .javaLine(ToastJavaLine.TWO_LINES)
+                .build());
+
+        assertEquals("Quest Complete!\nConstruction Worker Quest", PLAIN.serialize(display.getTitle()));
+    }
+
+    @Test
     public void grantPacketMapsEveryFrame() {
         assertEquals(AdvancementType.TASK, frame(ToastFrame.TASK));
         assertEquals(AdvancementType.GOAL, frame(ToastFrame.GOAL));

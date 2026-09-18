@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-velocity"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.7.3"
+var apiVersion = "1.8.4"
 
 repositories {
     maven("https://repo1.maven.org/maven2/")

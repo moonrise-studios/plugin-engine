@@ -1,6 +1,6 @@
 # plugin-engine
 
-A Java 21 library for building Minecraft Paper, BungeeCord, and Velocity plugins with reusable building blocks for commands, scheduling, GUIs, messaging, configuration, and utility helpers.
+A Java 21 library for building Minecraft Paper, BungeeCord, and Velocity plugins with reusable building blocks for commands, scheduling, GUIs, messaging, universal toasts, configuration, and utility helpers.
 
 Source repo: https://github.com/moonrise-studios/plugin-engine  
 Organization: https://github.com/moonrise-studios
@@ -12,7 +12,7 @@ Organization: https://github.com/moonrise-studios
 | Module | Artifact | Purpose |
 | --- | --- | --- |
 | common | `gg.moonrise.engine:plugin-engine-common` | Platform-agnostic APIs and helpers (configuration, messages, command abstractions, utilities). |
-| paper | `gg.moonrise.engine:plugin-engine-paper` | Paper-specific implementations (plugin base class, schedulers, command registration, GUI framework, item builder, jobs). |
+| paper | `gg.moonrise.engine:plugin-engine-paper` | Paper-specific implementations (plugin base class, schedulers, command registration, GUI framework, dialogs, universal toasts, item builder, jobs). |
 | bungeecord | `gg.moonrise.engine:plugin-engine-bungeecord` | BungeeCord-specific implementations (plugin base class, listener registration, Cloud command registration). |
 | velocity | `gg.moonrise.engine:plugin-engine-velocity` | Velocity-specific implementations (plugin base class, lifecycle integration, audiences, Cloud command registration). |
 
@@ -23,6 +23,11 @@ Organization: https://github.com/moonrise-studios
 - Paper 26.2 command registration through Cloud Paper `2.0.0`
 - BungeeCord API `1.21-R0.5-SNAPSHOT` (for the `bungeecord` module)
 - Velocity API `3.4.0-SNAPSHOT` and Cloud Velocity `2.0.0-beta.10` (for the `velocity` module)
+- Optional PacketEvents `2.12.x` (Java Edition toasts)
+- Optional Geyser API `2.11.3-SNAPSHOT` or newer (native Bedrock toasts). `2.11.3` is currently a snapshot API line,
+  shipped in Geyser builds from 2026-09-15 onward (the Minecraft Bedrock 26.50 support build). Older Geyser builds have
+  no native toast API, and those players fall back to the Java advancement path automatically.
+- Optional Floodgate API `2.2.x` (native Bedrock toasts when Geyser runs on a proxy or standalone)
 
 ## Installation
 
@@ -41,10 +46,10 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.7.4")
-    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.7.3")
-    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.7.3")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.7.3")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.8.4")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.8.4")
+    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.8.4")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.8.4")
 }
 ```
 
@@ -68,10 +73,10 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.7.4</version>
+        <version>1.8.4</version>
     </dependency>
-    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.7.3 -->
-    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.7.3 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.8.4 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.8.4 -->
 </dependencies>
 ```
 
@@ -113,7 +118,7 @@ Your plugin build must also declare Velocity API as both `compileOnly` and `anno
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-velocity:1.7.3")
+    implementation("gg.moonrise.engine:plugin-engine-velocity:1.8.4")
     implementation("gg.moonrise.moss:moss-velocity:1.2.3")
     implementation("org.springframework:spring-context:6.2.13")
     implementation("org.incendo:cloud-annotations:2.0.0")
@@ -528,6 +533,110 @@ Dialogs.create(player)
             );
         });
 ```
+
+## Toasts
+
+`gg.moonrise.engine.paper.toast` sends achievement-style toast popups to Java Edition and Bedrock Edition players
+through a single call. `Toasts` picks the right delivery path per player, so plugin code does not branch on platform.
+
+```java
+Toasts.send(player, "<green>Upgrade Successful!", "<white>Efficiency upgraded to <yellow>Level 4");
+
+ToastResult result = Toasts.send(player, Toast.builder()
+        .title(Message.of("<green>Quest Complete!"))
+        .content("<white>You completed The Beginning!")
+        .icon(Material.DIAMOND_PICKAXE)
+        .frame(ToastFrame.GOAL)
+        .javaLine(ToastJavaLine.BOTH)
+        .build());
+```
+
+`title` and `content` accept a MiniMessage `String`, an Adventure `Component`, or a `Message`. `icon` accepts a
+`Material` or an `ItemStack` and defaults to `PAPER`. `frame` is `TASK` (default), `GOAL`, or `CHALLENGE`. `javaLine`
+is `TITLE` (default), `CONTENT`, `BOTH` (title and content joined by a space), or `TWO_LINES` (title and content as two
+explicit lines). `ToastResult` reports which path ran: `BEDROCK`, `JAVA`, or `UNSUPPORTED`.
+
+### Two custom lines on Java Edition
+
+`TWO_LINES` gives Java Edition players two fully custom lines without a resource pack:
+
+```java
+Toasts.send(player, Toast.builder()
+        .title("<gold>Quest Complete!")
+        .content("<white>Construction Worker Quest")
+        .frame(ToastFrame.CHALLENGE)
+        .javaLine(ToastJavaLine.TWO_LINES)
+        .build());
+```
+
+The client splits the advancement title at 125 px per line. When the split produces two or more lines, the toast shows
+the fixed frame header (`Advancement Made!`, `Goal Reached!`, `Challenge Complete!`) for roughly the first 1.5 seconds,
+fades it out, and then draws the custom lines in its place for the rest of the 5 second display. Forcing a line break
+therefore makes both toast lines custom in the steady state.
+
+Each line is still limited to 125 px and may wrap further, so keep both lines short. The frame keeps controlling the
+sound and the colour of the brief header. The only way to change the header text itself is a resource-pack language
+override of `advancements.toast.task`, `advancements.toast.goal`, or `advancements.toast.challenge`, which the engine
+does not manage.
+
+This behaviour is read from the client's advancement toast rendering and is covered by unit tests at the packet level.
+It has not been verified against a live Java Edition client.
+
+Routing works in this order:
+
+1. If the Geyser API is present on the server and the player has a Geyser connection, a native Bedrock toast is sent
+   through `GeyserConnection#sendToast`. That method arrived on the `2.11.3-SNAPSHOT` API line, which ships in Geyser
+   builds from 2026-09-15 onward (the Minecraft Bedrock 26.50 support build); on older Geyser builds the engine detects
+   the missing method and falls through to the Java advancement path instead.
+2. Otherwise, if Floodgate is installed and the player is a Floodgate player, a native Bedrock `ToastRequestPacket` is
+   encoded and handed to Floodgate, which forwards it over its plugin channel until Geyser injects it. This covers
+   Geyser running on a proxy or standalone. The route is fire and forget: `BEDROCK` means the packet was handed off,
+   not that the client displayed it.
+3. Otherwise, if PacketEvents is installed, a temporary hidden fake advancement is sent and removed two ticks later.
+4. Otherwise nothing is sent and `UNSUPPORTED` is returned. No exception is thrown.
+
+All three integrations are optional.
+
+| Platform | First line | Second line | Icon | Formatting |
+| --- | --- | --- | --- | --- |
+| Java | Fixed by the frame (`Advancement Made!`, `Goal Reached!`, `Challenge Complete!`), or with `javaLine = TWO_LINES` only for the first ~1.5 s before the custom lines replace it | One custom line, chosen by `javaLine`; two custom lines with `TWO_LINES` | Custom item icon | Full Adventure components |
+| Bedrock | Custom | Custom | None | Legacy section-sign formatting; hex colours are downsampled |
+
+When Geyser runs on a Velocity or BungeeCord proxy, or standalone, the backend has no Geyser API. If Floodgate is
+installed on the backend (and on the proxy, which forwards the plugin channel), Bedrock players still get a real
+two-line native toast through the Floodgate route. Without Floodgate on the backend they take the Java advancement
+path instead; Geyser translates that into a Bedrock toast itself, so it still displays, but with the frame text as the
+first line.
+
+Floodgate logs one warning about an "unsafe part of the Floodgate api" the first time this route is used. That is
+expected: the raw packet channel is the only way to send a native toast from a backend that has no Geyser API. The
+engine calls it once and caches the handle.
+
+The engine does not shade or download PacketEvents, Geyser, or Floodgate; install them as server plugins. Declare them
+as optional descriptor dependencies so the consuming plugin can see their classes:
+
+```kotlin
+serverDependencies {
+    register("packetevents") {
+        load = PaperPluginDescription.RelativeLoadOrder.BEFORE
+        required = false
+        joinClasspath = true
+    }
+    register("Geyser-Spigot") {
+        load = PaperPluginDescription.RelativeLoadOrder.BEFORE
+        required = false
+        joinClasspath = true
+    }
+    register("floodgate") {
+        load = PaperPluginDescription.RelativeLoadOrder.BEFORE
+        required = false
+        joinClasspath = true
+    }
+}
+```
+
+`Toasts.send` is safe to call from any thread. The delayed advancement removal uses the engine `Scheduler`, so call it
+after the plugin has enabled.
 
 ## Messages and placeholders
 

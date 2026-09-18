@@ -6,10 +6,12 @@ plugins {
 
 var id = "plugin-engine-paper"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.7.4"
+var apiVersion = "1.8.4"
 
 repositories {
     maven("https://repo1.maven.org/maven2/")
+    maven("https://repo.opencollab.dev/main/")
+    maven("https://repo.codemc.io/repository/maven-releases/")
     mavenCentral()
 }
 
@@ -37,6 +39,15 @@ dependencies {
     // ConfigLib
     compileOnly("de.exlll:configlib-yaml:4.8.1")
 
+    // Geyser (Bedrock toasts)
+    compileOnly("org.geysermc.geyser:api:2.11.3-SNAPSHOT")
+
+    // Floodgate (Bedrock toasts when Geyser runs on a proxy or standalone)
+    compileOnly("org.geysermc.floodgate:api:2.2.5-SNAPSHOT")
+
+    // PacketEvents (Java Edition toasts)
+    compileOnly("com.github.retrooper:packetevents-spigot:2.12.1")
+
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")
@@ -47,6 +58,7 @@ dependencies {
     testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.76.1")
     testImplementation("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     testImplementation("net.kyori:adventure-text-serializer-plain:4.26.1")
+    testImplementation("com.github.retrooper:packetevents-spigot:2.12.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

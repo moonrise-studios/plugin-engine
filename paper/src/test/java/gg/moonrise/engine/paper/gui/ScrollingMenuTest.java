@@ -217,6 +217,25 @@ class ScrollingMenuTest extends MockBukkitTest {
     }
 
     @Test
+    void multipleLinesRenderWithoutConfiguredNavigationControls() {
+        PlayerMock player = server.addPlayer();
+        TestScrollingMenu menu = new TestScrollingMenu(player, 1, List.of(0, 1, 2));
+        menu.setContent(numberedButtons(8));
+
+        menu.refresh();
+
+        assertEquals(2, menu.getMaxLine());
+        assertItemAmount(menu.getInventory(), 0, 1);
+        assertItemAmount(menu.getInventory(), 2, 3);
+
+        menu.changeLine(2);
+
+        assertEquals(2, menu.getLine());
+        assertItemAmount(menu.getInventory(), 0, 7);
+        assertItemAmount(menu.getInventory(), 1, 8);
+    }
+
+    @Test
     void hiddenScrollControlsLeaveFixedButtonsVisible() {
         PlayerMock player = server.addPlayer();
         TestScrollingMenu menu = new TestScrollingMenu(player, 1, List.of(0, 1, 2));

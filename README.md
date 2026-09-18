@@ -41,7 +41,7 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.7.3")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.7.4")
     // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.7.3")
     // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.7.3")
     // or: implementation("gg.moonrise.engine:plugin-engine-common:1.7.3")
@@ -68,7 +68,7 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.7.3</version>
+        <version>1.7.4</version>
     </dependency>
     <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.7.3 -->
     <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.7.3 -->

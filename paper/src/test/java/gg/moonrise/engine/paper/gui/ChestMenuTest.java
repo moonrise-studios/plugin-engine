@@ -81,6 +81,30 @@ class ChestMenuTest extends MockBukkitTest {
     }
 
     @Test
+    void replacingButtonDetachesDisplacedButtonAndRefreshTracking() {
+        PlayerMock player = server.addPlayer();
+        TestChestMenu menu = new TestChestMenu(player, 1);
+        Button filler = Button.builder()
+                .item(viewer -> new ItemStack(Material.GRAY_STAINED_GLASS_PANE))
+                .refresh(20L)
+                .build();
+        Button control = button(Material.EMERALD);
+
+        menu.addButton(4, filler);
+        menu.refresh();
+        assertEquals(menu.getInventory(), filler.inventory());
+        assertEquals(1, menu.getRefreshingButtons().size());
+
+        menu.addButton(4, control);
+        menu.refresh();
+
+        assertNull(filler.inventory());
+        assertEquals(-1, filler.slot());
+        assertEquals(0, menu.getRefreshingButtons().size());
+        assertEquals(Material.EMERALD, menu.getInventory().getItem(4).getType());
+    }
+
+    @Test
     void invalidButtonUuidDoesNotThrowWhenCheckingCancelState() {
         PlayerMock player = server.addPlayer();
         TestChestMenu menu = new TestChestMenu(player, 1);

@@ -343,15 +343,13 @@ public abstract class PaginatedMenu implements ChestInterface {
         List<Integer> listingSlots = new ArrayList<>(contentSlots);
         listingSlots.removeAll(buttons.keySet());
 
-        if (hasNextPage) {
-            Preconditions.checkNotNull(nextPageButton, "Next Page Button cannot be null.");
+        if (hasNextPage && nextPageButton != null) {
             listingSlots.remove(Integer.valueOf(nextPageButton.getKey()));
         } else if (nextPageButton != null && nextPageFallbackKey != null) {
             listingSlots.remove(Integer.valueOf(nextPageButton.getKey()));
         }
 
-        if (hasPreviousPage) {
-            Preconditions.checkNotNull(previousPageButton, "Previous Page Button cannot be null.");
+        if (hasPreviousPage && previousPageButton != null) {
             listingSlots.remove(Integer.valueOf(previousPageButton.getKey()));
         } else if (previousPageButton != null && previousPageFallbackKey != null) {
             listingSlots.remove(Integer.valueOf(previousPageButton.getKey()));
@@ -372,13 +370,13 @@ public abstract class PaginatedMenu implements ChestInterface {
             }
         }
 
-        if (hasNextPage) {
+        if (hasNextPage && nextPageButton != null) {
             renderButtonToSlot(nextPageButton.getKey(), nextPageButton.getValue());
         } else {
             renderFallbackButton(nextPageButton, nextPageFallbackKey);
         }
 
-        if (hasPreviousPage) {
+        if (hasPreviousPage && previousPageButton != null) {
             renderButtonToSlot(previousPageButton.getKey(), previousPageButton.getValue());
         } else {
             renderFallbackButton(previousPageButton, previousPageFallbackKey);

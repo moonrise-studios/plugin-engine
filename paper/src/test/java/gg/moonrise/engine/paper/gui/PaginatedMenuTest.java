@@ -112,6 +112,32 @@ class PaginatedMenuTest extends MockBukkitTest {
     }
 
     @Test
+    void multiplePagesRenderWithoutConfiguredNavigationControls() {
+        PlayerMock player = server.addPlayer();
+        TestPaginatedMenu menu = new TestPaginatedMenu(player, 1, List.of(0, 1));
+        menu.setContentUnfiltered(buttons(Material.DIAMOND, 5));
+
+        menu.refresh();
+
+        assertEquals(3, menu.getPageCount());
+        assertTrue(menu.hasNextPage());
+        assertItem(menu.getInventory(), 0, Material.DIAMOND);
+        assertItem(menu.getInventory(), 1, Material.DIAMOND);
+
+        menu.changePage(2);
+
+        assertTrue(menu.hasNextPage());
+        assertTrue(menu.hasPreviousPage());
+        assertItem(menu.getInventory(), 0, Material.DIAMOND);
+        assertItem(menu.getInventory(), 1, Material.DIAMOND);
+
+        menu.changePage(3);
+
+        assertTrue(menu.hasPreviousPage());
+        assertItem(menu.getInventory(), 0, Material.DIAMOND);
+    }
+
+    @Test
     void layoutFallbackKeyRendersWhenPageControlsAreHidden() {
         PlayerMock player = server.addPlayer();
         TestPaginatedMenu menu = new TestPaginatedMenu(player, 1, List.of());

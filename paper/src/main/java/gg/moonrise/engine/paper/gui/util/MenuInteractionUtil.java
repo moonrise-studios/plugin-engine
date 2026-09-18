@@ -145,11 +145,17 @@ public final class MenuInteractionUtil {
             Map<UUID, Button> buttonById,
             Map<Integer, Button> refreshingButtons
     ) {
-        buttons.put(slot, button);
+        Button replaced = buttons.put(slot, button);
+        if (replaced != null && replaced != button) {
+            buttonById.remove(replaced.uuid());
+            refreshingButtons.remove(slot);
+            replaced.onAddToInventory(null);
+        }
         buttonById.put(button.uuid(), button);
 
-        if (button.refreshIntervalTicks() <= 0L) return;
-        refreshingButtons.put(slot, button);
+        if (button.refreshIntervalTicks() > 0L) {
+            refreshingButtons.put(slot, button);
+        }
     }
 
     public static boolean checkCancelClick(Inventory inventory, Map<UUID, Button> buttonById, int slot) {

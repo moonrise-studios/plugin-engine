@@ -42,6 +42,9 @@ dependencies {
     // Geyser (Bedrock toasts)
     compileOnly("org.geysermc.geyser:api:2.11.3-SNAPSHOT")
 
+    // Floodgate (Bedrock toasts when Geyser runs on a proxy or standalone)
+    compileOnly("org.geysermc.floodgate:api:2.2.5-SNAPSHOT")
+
     // PacketEvents (Java Edition toasts)
     compileOnly("com.github.retrooper:packetevents-spigot:2.12.1")
 

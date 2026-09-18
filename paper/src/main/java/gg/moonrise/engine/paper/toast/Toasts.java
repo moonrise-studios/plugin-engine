@@ -11,21 +11,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Static facade for sending toast notifications to any player, on either edition.
  * <p>
- * Bedrock players connected through Geyser on this server receive a native Bedrock toast.
- * Everyone else receives a transient fake advancement, which is also what Geyser translates
- * when it runs on a proxy instead of the backend.
+ * Bedrock players receive a native Bedrock toast, either through the Geyser API when Geyser
+ * runs on this server, or through Floodgate's raw packet channel when Geyser runs on a proxy
+ * or standalone. Everyone else receives a transient fake advancement.
  * <p>
- * Neither Geyser nor PacketEvents is required at runtime; when neither is available the
- * call is a no-op that returns {@link ToastResult#UNSUPPORTED}.
+ * The Floodgate route is fire and forget: Floodgate hands the packet to Geyser over a plugin
+ * channel and nothing reports back, so {@link ToastResult#BEDROCK} there means the packet was
+ * handed off, not that the client displayed it.
+ * <p>
+ * None of Geyser, Floodgate, or PacketEvents is required at runtime; when none is available
+ * the call is a no-op that returns {@link ToastResult#UNSUPPORTED}.
  */
 public final class Toasts {
 
     private static final String GEYSER_PLUGIN = "Geyser-Spigot";
+    private static final String FLOODGATE_PLUGIN = "floodgate";
     private static final String PACKET_EVENTS_PLUGIN = "packetevents";
 
     private static final AtomicBoolean WARNED = new AtomicBoolean();
 
     private static volatile ToastSender geyserSender;
+    private static volatile ToastSender floodgateSender;
     private static volatile ToastSender packetEventsSender;
 
     private Toasts() {
@@ -51,6 +57,9 @@ public final class Toasts {
 
         ToastSender geyser = geyser();
         if (geyser != null && geyser.send(player, toast)) return ToastResult.BEDROCK;
+
+        ToastSender floodgate = floodgate();
+        if (floodgate != null && floodgate.send(player, toast)) return ToastResult.BEDROCK;
 
         ToastSender packetEvents = packetEvents();
         if (packetEvents != null && packetEvents.send(player, toast)) return ToastResult.JAVA;
@@ -133,6 +142,17 @@ public final class Toasts {
         return sender;
     }
 
+    private static ToastSender floodgate() {
+        if (!pluginEnabled(FLOODGATE_PLUGIN)) return null;
+
+        ToastSender sender = floodgateSender;
+        if (sender == null) {
+            sender = new FloodgateToastSender();
+            floodgateSender = sender;
+        }
+        return sender;
+    }
+
     private static ToastSender packetEvents() {
         if (!pluginEnabled(PACKET_EVENTS_PLUGIN)) return null;
 
@@ -155,6 +175,7 @@ public final class Toasts {
     private static void warnOnce() {
         if (!WARNED.compareAndSet(false, true)) return;
 
-        Bukkit.getLogger().warning("Toasts are unavailable: install PacketEvents for Java Edition toasts, or Geyser for native Bedrock toasts.");
+        Bukkit.getLogger().warning("Toasts are unavailable (logged once): install PacketEvents for Java Edition toasts, "
+                + "or Geyser (on this server) or Floodgate (when Geyser runs on a proxy or standalone) for native Bedrock toasts.");
     }
 }

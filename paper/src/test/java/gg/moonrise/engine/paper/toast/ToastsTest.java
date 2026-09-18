@@ -10,10 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ToastsTest extends MockBukkitTest {
+public class ToastsTest extends MockBukkitTest {
 
     @Test
-    void returnsUnsupportedWhenNoRouteIsAvailable() {
+    public void returnsUnsupportedWhenNoRouteIsAvailable() {
         PlayerMock player = server.addPlayer("Eric");
         Toast toast = Toast.builder().title("Hello").build();
 
@@ -21,7 +21,7 @@ class ToastsTest extends MockBukkitTest {
     }
 
     @Test
-    void returnsUnsupportedForEveryConvenienceOverload() {
+    public void returnsUnsupportedForEveryConvenienceOverload() {
         PlayerMock player = server.addPlayer("Eric");
 
         assertEquals(ToastResult.UNSUPPORTED, Toasts.send(player, "Hello"));
@@ -33,7 +33,7 @@ class ToastsTest extends MockBukkitTest {
     }
 
     @Test
-    void rejectsNullArguments() {
+    public void rejectsNullArguments() {
         PlayerMock player = server.addPlayer("Eric");
         Toast toast = Toast.builder().title("Hello").build();
 
@@ -42,7 +42,7 @@ class ToastsTest extends MockBukkitTest {
     }
 
     @Test
-    void exposesBuilderFromFacade() {
+    public void exposesBuilderFromFacade() {
         assertNotNull(Toasts.builder().title("Hello").build());
     }
 }

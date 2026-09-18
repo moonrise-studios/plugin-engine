@@ -11,14 +11,26 @@ import java.util.logging.Level;
 /**
  * Delivers toasts to Bedrock players through the native Geyser toast API.
  * <p>
- * Loaded reflectively-late by {@link Toasts}: never reference this class unless the
- * Geyser plugin is enabled on this server.
+ * Internal; not part of the supported API. This is the only class that imports Geyser, and
+ * {@link Toasts} never references it unless the Geyser plugin is enabled on this server.
  */
-final class GeyserToastSender implements ToastSender {
+public final class GeyserToastSender implements ToastSender {
 
     private static final boolean SEND_TOAST_SUPPORTED = resolveSendToastSupport();
     private static final AtomicBoolean WARNED = new AtomicBoolean();
 
+    /**
+     * Creates a sender. Only construct this once the Geyser plugin is enabled.
+     */
+    public GeyserToastSender() {
+    }
+
+    /**
+     * Attempts to deliver the toast natively to a Bedrock player on this server.
+     * @param player the recipient
+     * @param toast the toast to deliver
+     * @return {@code true} when Geyser accepted the toast
+     */
     @Override
     public boolean send(Player player, Toast toast) {
         if (!SEND_TOAST_SUPPORTED) return false;

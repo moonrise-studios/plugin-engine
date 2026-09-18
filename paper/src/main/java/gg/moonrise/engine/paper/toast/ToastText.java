@@ -9,10 +9,12 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * A deferred piece of toast text. MiniMessage strings and {@link Message} values are
+ * A deferred piece of toast text.
+ * <p>
+ * Internal; not part of the supported API. MiniMessage strings and {@link Message} values are
  * resolved per viewer at send time, while raw components are used as-is.
  */
-final class ToastText {
+public final class ToastText {
 
     private final Function<Player, Component> resolver;
 
@@ -20,34 +22,69 @@ final class ToastText {
         this.resolver = resolver;
     }
 
-    static ToastText of(Component component) {
+    /**
+     * Wraps an already rendered component.
+     * @param component the component
+     * @return the wrapped text
+     */
+    public static ToastText of(Component component) {
         Objects.requireNonNull(component, "component");
         return new ToastText(viewer -> component);
     }
 
-    static ToastText of(Message message) {
+    /**
+     * Wraps a message, resolved per viewer at send time.
+     * @param message the message
+     * @return the wrapped text
+     */
+    public static ToastText of(Message message) {
         Objects.requireNonNull(message, "message");
         return new ToastText(message::asComponent);
     }
 
-    static ToastText of(String miniMessage) {
+    /**
+     * Wraps a MiniMessage string, resolved per viewer at send time.
+     * @param miniMessage the MiniMessage string
+     * @return the wrapped text
+     */
+    public static ToastText of(String miniMessage) {
         Objects.requireNonNull(miniMessage, "miniMessage");
         return new ToastText(viewer -> MiniMessageUtil.fromText(viewer, miniMessage));
     }
 
-    static ToastText nullable(Component component) {
+    /**
+     * Wraps a component that may be absent.
+     * @param component the component, or {@code null}
+     * @return the wrapped text, or {@code null}
+     */
+    public static ToastText nullable(Component component) {
         return component == null ? null : of(component);
     }
 
-    static ToastText nullable(Message message) {
+    /**
+     * Wraps a message that may be absent.
+     * @param message the message, or {@code null}
+     * @return the wrapped text, or {@code null}
+     */
+    public static ToastText nullable(Message message) {
         return message == null ? null : of(message);
     }
 
-    static ToastText nullable(String miniMessage) {
+    /**
+     * Wraps a MiniMessage string that may be absent.
+     * @param miniMessage the MiniMessage string, or {@code null}
+     * @return the wrapped text, or {@code null}
+     */
+    public static ToastText nullable(String miniMessage) {
         return miniMessage == null ? null : of(miniMessage);
     }
 
-    Component resolve(Player viewer) {
+    /**
+     * Resolves this text for a viewer.
+     * @param viewer the player the text is rendered for
+     * @return the rendered component
+     */
+    public Component resolve(Player viewer) {
         return resolver.apply(viewer);
     }
 }

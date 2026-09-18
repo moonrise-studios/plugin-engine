@@ -16,12 +16,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ToastTest extends MockBukkitTest {
+public class ToastTest extends MockBukkitTest {
 
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
     @Test
-    void appliesBuilderDefaults() {
+    public void appliesBuilderDefaults() {
         Toast toast = Toast.builder().title("Hello").build();
 
         assertEquals(ToastFrame.TASK, toast.getFrame());
@@ -31,7 +31,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void honoursExplicitBuilderValues() {
+    public void honoursExplicitBuilderValues() {
         Toast toast = Toast.builder()
                 .title("Hello")
                 .content("World")
@@ -47,7 +47,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void copiesIconSoToastStaysImmutable() {
+    public void copiesIconSoToastStaysImmutable() {
         ItemStack icon = new ItemStack(Material.DIAMOND);
         Toast toast = Toast.builder().title("Hello").icon(icon).build();
 
@@ -57,7 +57,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void returnsDefensiveIconCopy() {
+    public void returnsDefensiveIconCopy() {
         Toast toast = Toast.builder().title("Hello").icon(Material.DIAMOND).build();
 
         ItemStack returned = toast.getIcon();
@@ -67,14 +67,14 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void rejectsToastWithoutTitle() {
+    public void rejectsToastWithoutTitle() {
         Toast.Builder builder = Toast.builder().content("World");
 
         assertThrows(IllegalStateException.class, builder::build);
     }
 
     @Test
-    void rejectsNullBuilderValues() {
+    public void rejectsNullBuilderValues() {
         Toast.Builder builder = Toast.builder();
 
         assertThrows(NullPointerException.class, () -> builder.title((String) null));
@@ -87,7 +87,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void clearsContentWithNull() {
+    public void clearsContentWithNull() {
         Toast toast = Toast.builder().title("Hello").content("World").content((String) null).build();
 
         assertFalse(toast.hasContent());
@@ -95,7 +95,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void resolvesJavaLineForTitle() {
+    public void resolvesJavaLineForTitle() {
         PlayerMock player = server.addPlayer("Eric");
         Toast toast = Toast.builder().title("Hello").content("World").build();
 
@@ -103,7 +103,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void resolvesJavaLineForContent() {
+    public void resolvesJavaLineForContent() {
         PlayerMock player = server.addPlayer("Eric");
         Toast toast = Toast.builder()
                 .title("Hello")
@@ -115,7 +115,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void resolvesJavaLineForBoth() {
+    public void resolvesJavaLineForBoth() {
         PlayerMock player = server.addPlayer("Eric");
         Toast toast = Toast.builder()
                 .title("Hello")
@@ -127,7 +127,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void fallsBackToTitleWhenContentIsMissing() {
+    public void fallsBackToTitleWhenContentIsMissing() {
         PlayerMock player = server.addPlayer("Eric");
 
         Toast contentLine = Toast.builder().title("Hello").javaLine(ToastJavaLine.CONTENT).build();
@@ -138,7 +138,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void resolvesMessagesPerViewer() {
+    public void resolvesMessagesPerViewer() {
         PlayerMock player = server.addPlayer("Eric");
         Toast toast = Toast.builder().title(Message.of("<green>Hello")).build();
 
@@ -146,7 +146,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void serializesBedrockTextAsLegacySection() {
+    public void serializesBedrockTextAsLegacySection() {
         PlayerMock player = server.addPlayer("Eric");
         Toast toast = Toast.builder()
                 .title(Component.text("Hello", NamedTextColor.GREEN))
@@ -158,7 +158,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void serializesMissingBedrockContentAsEmptyString() {
+    public void serializesMissingBedrockContentAsEmptyString() {
         PlayerMock player = server.addPlayer("Eric");
         Toast toast = Toast.builder().title("Hello").build();
 
@@ -166,7 +166,7 @@ class ToastTest extends MockBukkitTest {
     }
 
     @Test
-    void serializesMiniMessageTitleForBedrock() {
+    public void serializesMiniMessageTitleForBedrock() {
         PlayerMock player = server.addPlayer("Eric");
         Toast toast = Toast.builder().title("<green>Hello").build();
 

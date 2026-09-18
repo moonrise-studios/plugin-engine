@@ -29,31 +29,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * running PacketEvents instance, so the icon converter is stubbed out here; everything
  * else in the packet is asserted directly.
  */
-class PacketEventsToastSenderTest extends MockBukkitTest {
+public class PacketEventsToastSenderTest extends MockBukkitTest {
 
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
     private final PacketEventsToastSender sender = new PacketEventsToastSender(icon -> null);
 
     @BeforeEach
-    void setUpPacketEvents() {
+    public void setUpPacketEvents() {
         PacketEvents.setAPI(new TestPacketEventsAPI());
     }
 
     @AfterEach
-    void tearDownPacketEvents() {
+    public void tearDownPacketEvents() {
         PacketEvents.setAPI(null);
     }
 
     @Test
-    void grantPacketRequestsAdvancementDisplay() {
+    public void grantPacketRequestsAdvancementDisplay() {
         WrapperPlayServerUpdateAdvancements packet = grant(Toast.builder().title("Hello").build());
 
         assertTrue(packet.isShowAdvancements(), "showAdvancements must be true or 1.21.5+ clients drop the toast");
     }
 
     @Test
-    void grantPacketKeysProgressByTheAddedAdvancementId() {
+    public void grantPacketKeysProgressByTheAddedAdvancementId() {
         WrapperPlayServerUpdateAdvancements packet = grant(Toast.builder().title("Hello").build());
 
         List<AdvancementHolder> added = packet.getAddedAdvancements();
@@ -70,7 +70,7 @@ class PacketEventsToastSenderTest extends MockBukkitTest {
     }
 
     @Test
-    void grantPacketCompletesTheSingleCriterion() {
+    public void grantPacketCompletesTheSingleCriterion() {
         Advancement advancement = grant(Toast.builder().title("Hello").build())
                 .getAddedAdvancements()
                 .getFirst()
@@ -81,7 +81,7 @@ class PacketEventsToastSenderTest extends MockBukkitTest {
     }
 
     @Test
-    void grantPacketHidesTheAdvancementButShowsTheToast() {
+    public void grantPacketHidesTheAdvancementButShowsTheToast() {
         AdvancementDisplay display = display(Toast.builder().title("<green>Hello").content("World").build());
 
         assertTrue(display.isShowToast());
@@ -91,7 +91,7 @@ class PacketEventsToastSenderTest extends MockBukkitTest {
     }
 
     @Test
-    void grantPacketRendersTheSelectedJavaLine() {
+    public void grantPacketRendersTheSelectedJavaLine() {
         AdvancementDisplay display = display(Toast.builder()
                 .title("Hello")
                 .content("World")
@@ -102,14 +102,14 @@ class PacketEventsToastSenderTest extends MockBukkitTest {
     }
 
     @Test
-    void grantPacketMapsEveryFrame() {
+    public void grantPacketMapsEveryFrame() {
         assertEquals(AdvancementType.TASK, frame(ToastFrame.TASK));
         assertEquals(AdvancementType.GOAL, frame(ToastFrame.GOAL));
         assertEquals(AdvancementType.CHALLENGE, frame(ToastFrame.CHALLENGE));
     }
 
     @Test
-    void revokePacketRemovesTheToastId() {
+    public void revokePacketRemovesTheToastId() {
         WrapperPlayServerUpdateAdvancements packet = sender.revokePacket();
 
         assertTrue(packet.getAddedAdvancements().isEmpty());

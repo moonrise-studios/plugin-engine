@@ -27,6 +27,7 @@ Organization: https://github.com/moonrise-studios
 - Optional Geyser API `2.11.3-SNAPSHOT` or newer (native Bedrock toasts). `2.11.3` is currently a snapshot API line,
   shipped in Geyser builds from 2026-09-15 onward (the Minecraft Bedrock 26.50 support build). Older Geyser builds have
   no native toast API, and those players fall back to the Java advancement path automatically.
+- Optional Floodgate API `2.2.x` (native Bedrock toasts when Geyser runs on a proxy or standalone)
 
 ## Installation
 
@@ -560,22 +561,32 @@ Routing works in this order:
    through `GeyserConnection#sendToast`. That method arrived on the `2.11.3-SNAPSHOT` API line, which ships in Geyser
    builds from 2026-09-15 onward (the Minecraft Bedrock 26.50 support build); on older Geyser builds the engine detects
    the missing method and falls through to the Java advancement path instead.
-2. Otherwise, if PacketEvents is installed, a temporary hidden fake advancement is sent and removed two ticks later.
-3. Otherwise nothing is sent and `UNSUPPORTED` is returned. No exception is thrown.
+2. Otherwise, if Floodgate is installed and the player is a Floodgate player, a native Bedrock `ToastRequestPacket` is
+   encoded and handed to Floodgate, which forwards it over its plugin channel until Geyser injects it. This covers
+   Geyser running on a proxy or standalone. The route is fire and forget: `BEDROCK` means the packet was handed off,
+   not that the client displayed it.
+3. Otherwise, if PacketEvents is installed, a temporary hidden fake advancement is sent and removed two ticks later.
+4. Otherwise nothing is sent and `UNSUPPORTED` is returned. No exception is thrown.
 
-Both integrations are optional.
+All three integrations are optional.
 
 | Platform | First line | Second line | Icon | Formatting |
 | --- | --- | --- | --- | --- |
 | Java | Fixed by the frame (`Advancement Made!`, `Goal Reached!`, `Challenge Complete!`) | One custom line, chosen by `javaLine` | Custom item icon | Full Adventure components |
 | Bedrock | Custom | Custom | None | Legacy section-sign formatting; hex colours are downsampled |
 
-When Geyser runs on a Velocity or BungeeCord proxy instead of the backend, the backend has no Geyser API, so Bedrock
-players take the Java path. Geyser translates the advancement toast into a Bedrock toast itself, so it still displays,
-with the frame text as the first line.
+When Geyser runs on a Velocity or BungeeCord proxy, or standalone, the backend has no Geyser API. If Floodgate is
+installed on the backend (and on the proxy, which forwards the plugin channel), Bedrock players still get a real
+two-line native toast through the Floodgate route. Without Floodgate on the backend they take the Java advancement
+path instead; Geyser translates that into a Bedrock toast itself, so it still displays, but with the frame text as the
+first line.
 
-The engine does not shade or download PacketEvents or Geyser; install them as server plugins. Declare them as optional
-descriptor dependencies so the consuming plugin can see their classes:
+Floodgate logs one warning about an "unsafe part of the Floodgate api" the first time this route is used. That is
+expected: the raw packet channel is the only way to send a native toast from a backend that has no Geyser API. The
+engine calls it once and caches the handle.
+
+The engine does not shade or download PacketEvents, Geyser, or Floodgate; install them as server plugins. Declare them
+as optional descriptor dependencies so the consuming plugin can see their classes:
 
 ```kotlin
 serverDependencies {
@@ -585,6 +596,11 @@ serverDependencies {
         joinClasspath = true
     }
     register("Geyser-Spigot") {
+        load = PaperPluginDescription.RelativeLoadOrder.BEFORE
+        required = false
+        joinClasspath = true
+    }
+    register("floodgate") {
         load = PaperPluginDescription.RelativeLoadOrder.BEFORE
         required = false
         joinClasspath = true

@@ -1,7 +1,6 @@
 package gg.moonrise.engine.paper.toast;
 
 import gg.moonrise.engine.message.Message;
-import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
@@ -30,16 +29,7 @@ public final class Toast {
     private final ToastText content;
     private final ItemStack icon;
 
-    /**
-     * The advancement frame used on Java Edition.
-     */
-    @Getter
     private final ToastFrame frame;
-
-    /**
-     * Which part of the toast is rendered on the single customizable Java Edition line.
-     */
-    @Getter
     private final ToastJavaLine javaLine;
 
     private Toast(Builder builder) {
@@ -64,6 +54,22 @@ public final class Toast {
      */
     public ItemStack getIcon() {
         return icon.clone();
+    }
+
+    /**
+     * The advancement frame used on Java Edition.
+     * @return the frame
+     */
+    public ToastFrame getFrame() {
+        return frame;
+    }
+
+    /**
+     * Which part of the toast is rendered on the single customizable Java Edition line.
+     * @return the line selection
+     */
+    public ToastJavaLine getJavaLine() {
+        return javaLine;
     }
 
     /**
@@ -130,7 +136,7 @@ public final class Toast {
         return contentComponent == null ? "" : legacy(contentComponent);
     }
 
-    static String legacy(Component component) {
+    private static String legacy(Component component) {
         return LEGACY.serialize(component);
     }
 

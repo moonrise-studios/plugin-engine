@@ -27,10 +27,11 @@ import java.util.logging.Level;
  * Delivers toasts to Java Edition players by granting, then immediately revoking, a hidden
  * fake advancement.
  * <p>
- * Loaded reflectively-late by {@link Toasts}: never reference this class unless the
- * PacketEvents plugin is enabled on this server.
+ * Internal; not part of the supported API. This is one of only two classes that import
+ * PacketEvents, and {@link Toasts} never references it unless the PacketEvents plugin is
+ * enabled on this server.
  */
-final class PacketEventsToastSender implements ToastSender {
+public final class PacketEventsToastSender implements ToastSender {
 
     /**
      * A single stable advancement id is reused for every toast. The client never prunes its
@@ -38,23 +39,41 @@ final class PacketEventsToastSender implements ToastSender {
      * whole session. Re-granting the same id still fires the toast, and a stale removal
      * arriving after a newer grant is harmless.
      */
-    static final ResourceLocation TOAST_ID = new ResourceLocation("moonrise", "toast");
+    public static final ResourceLocation TOAST_ID = new ResourceLocation("moonrise", "toast");
 
-    static final String CRITERION = "trigger";
+    /**
+     * The single criterion completed to trigger the toast.
+     */
+    public static final String CRITERION = "trigger";
 
     private static final long REMOVAL_DELAY_TICKS = 2L;
     private static final AtomicBoolean WARNED = new AtomicBoolean();
 
     private final Function<org.bukkit.inventory.ItemStack, com.github.retrooper.packetevents.protocol.item.ItemStack> iconConverter;
 
-    PacketEventsToastSender() {
+    /**
+     * Creates a sender that converts icons through PacketEvents' Spigot bridge. Only construct
+     * this once the PacketEvents plugin is enabled.
+     */
+    public PacketEventsToastSender() {
         this(SpigotConversionUtil::fromBukkitItemStack);
     }
 
-    PacketEventsToastSender(Function<org.bukkit.inventory.ItemStack, com.github.retrooper.packetevents.protocol.item.ItemStack> iconConverter) {
+    /**
+     * Creates a sender with an explicit icon converter, so packet construction can be exercised
+     * without a running PacketEvents instance.
+     * @param iconConverter converts a Bukkit item into its PacketEvents equivalent
+     */
+    public PacketEventsToastSender(Function<org.bukkit.inventory.ItemStack, com.github.retrooper.packetevents.protocol.item.ItemStack> iconConverter) {
         this.iconConverter = Objects.requireNonNull(iconConverter, "iconConverter");
     }
 
+    /**
+     * Grants the fake advancement and schedules its removal.
+     * @param player the recipient
+     * @param toast the toast to deliver
+     * @return {@code true} when the grant packet was sent
+     */
     @Override
     public boolean send(Player player, Toast toast) {
         try {
@@ -76,7 +95,13 @@ final class PacketEventsToastSender implements ToastSender {
         return true;
     }
 
-    WrapperPlayServerUpdateAdvancements grantPacket(Player player, Toast toast) {
+    /**
+     * Builds the packet that adds the fake advancement and immediately completes its criterion.
+     * @param player the recipient, used to resolve the toast text
+     * @param toast the toast to render
+     * @return the grant packet
+     */
+    public WrapperPlayServerUpdateAdvancements grantPacket(Player player, Toast toast) {
         AdvancementDisplay display = new AdvancementDisplay(
                 toast.javaComponent(player),
                 Component.empty(),
@@ -113,7 +138,11 @@ final class PacketEventsToastSender implements ToastSender {
         );
     }
 
-    WrapperPlayServerUpdateAdvancements revokePacket() {
+    /**
+     * Builds the packet that removes the fake advancement again.
+     * @return the revoke packet
+     */
+    public WrapperPlayServerUpdateAdvancements revokePacket() {
         return new WrapperPlayServerUpdateAdvancements(false, List.of(), Set.of(TOAST_ID), Map.of(), true);
     }
 

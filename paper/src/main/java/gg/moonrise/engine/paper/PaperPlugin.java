@@ -5,7 +5,6 @@ import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.scheduler.Scheduler;
 import gg.moonrise.engine.paper.readiness.PaperServiceReadiness;
 import gg.moonrise.engine.state.ServiceReadiness;
-import gg.moonrise.engine.state.ServiceReadiness.Failure;
 import gg.moonrise.engine.state.Reloadable;
 import gg.moonrise.moss.paper.MossPaper;
 import lombok.extern.slf4j.Slf4j;
@@ -46,24 +45,13 @@ public abstract class PaperPlugin extends MossPaper implements Plugin {
                     Duration.ofSeconds(60)
             );
         }
-        try {
-            super.onEnable();
+        super.onEnable();
 
-            invokeBeans(
-                    Listener.class,
-                    listener -> getServer().getPluginManager().registerEvents(listener, this),
-                    (listener, e) -> log.error("Failed to register listener: {}", listener.getClass().getSimpleName(), e)
-            );
-        } catch (RuntimeException | LinkageError failure) {
-            if (readiness != null) {
-                try {
-                    readiness.expirePending(new Failure("plugin enable failed", failure));
-                } catch (RuntimeException reportFailure) {
-                    failure.addSuppressed(reportFailure);
-                }
-            }
-            throw failure;
-        }
+        invokeBeans(
+                Listener.class,
+                listener -> getServer().getPluginManager().registerEvents(listener, this),
+                (listener, e) -> log.error("Failed to register listener: {}", listener.getClass().getSimpleName(), e)
+        );
     }
 
     @Override

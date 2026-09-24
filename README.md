@@ -124,8 +124,8 @@ unavailable API result as appropriate. `DISABLE_FEATURE` leaves the plugin enabl
 `DISABLE_PLUGIN`, `BLOCK_CONNECTIONS`, and `STOP_SERVER` apply their respective platform actions.
 The admission message uses a built-in fallback, so it does not depend on operator configuration.
 
-A failure before Spring creates the readiness bean cannot be classified as a feature failure.
-Connection-critical plugins must handle that earlier bootstrap failure before accepting joins.
+Readiness applies after the plugin loads and declares its services. A jar that cannot load or
+an enable-time code failure is a deployment issue, outside this runtime contract.
 
 ## Quick start (BungeeCord plugins)
 

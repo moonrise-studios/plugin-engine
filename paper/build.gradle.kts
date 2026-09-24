@@ -44,6 +44,7 @@ dependencies {
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.12.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.mockito:mockito-core:5.23.0")
     testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.76.1")
     testImplementation("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     testImplementation("net.kyori:adventure-text-serializer-plain:4.26.1")

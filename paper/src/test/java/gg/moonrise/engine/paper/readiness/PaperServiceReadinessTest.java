@@ -16,6 +16,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -130,6 +132,38 @@ public final class PaperServiceReadinessTest {
         assertEquals(1, stopped.get());
         readiness.unavailable("chat-runtime", new Failure("still unavailable", new IllegalStateException()));
         assertEquals(0, pending.size());
+    }
+
+    @Test
+    public void featureOnlyStartupDeadlineLogsItsFailureOnce() {
+        ServiceReadiness readiness = ServiceReadiness.builder()
+                .service("shop-runtime", FailureAction.DISABLE_FEATURE)
+                .build();
+        Plugin plugin = mock(Plugin.class);
+        Logger logger = Logger.getLogger("readiness-feature-test");
+        logger.setUseParentHandlers(false);
+        List<LogRecord> records = new ArrayList<>();
+        Handler handler = new Handler() {
+            @Override public void publish(LogRecord record) { records.add(record); }
+            @Override public void flush() { }
+            @Override public void close() { }
+        };
+        logger.addHandler(handler);
+        when(plugin.getLogger()).thenReturn(logger);
+        try {
+            PaperServiceReadiness.forTesting(plugin, readiness, Component.text("Unavailable"),
+                    Runnable::run, () -> { }, ignored -> { });
+            Failure failure = new Failure("startup deadline exceeded", new IllegalStateException("late"));
+            readiness.expirePending(failure);
+            readiness.unavailable("shop-runtime", failure);
+
+            assertEquals(1, records.size());
+            assertEquals("Service shop-runtime is unavailable (startup deadline exceeded); feature disabled",
+                    records.getFirst().getMessage());
+            assertEquals(failure.cause(), records.getFirst().getThrown());
+        } finally {
+            logger.removeHandler(handler);
+        }
     }
 
     @Test

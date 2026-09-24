@@ -46,7 +46,7 @@ public final class PaperServiceReadiness implements Listener, AutoCloseable {
     private final Consumer<Runnable> serverThread;
     private final Runnable stopServer;
     private final Consumer<Plugin> disablePlugin;
-    private final ConcurrentMap<String, Failure> loggedConnectionFailures = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Failure> loggedPassiveFailures = new ConcurrentHashMap<>();
     private final AtomicBoolean disableQueued = new AtomicBoolean();
     private final AtomicBoolean stopQueued = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -190,7 +190,7 @@ public final class PaperServiceReadiness implements Listener, AutoCloseable {
             return;
         }
         Snapshot latest = readiness.snapshot();
-        logConnectionFailures(latest);
+        logPassiveFailures(latest);
         switch (latest.enforcement()) {
             case STOP_SERVER -> queueAction(stopQueued, Enforcement.STOP_SERVER, stopServer);
             case DISABLE_PLUGIN -> queueAction(disableQueued, Enforcement.DISABLE_PLUGIN,
@@ -200,19 +200,22 @@ public final class PaperServiceReadiness implements Listener, AutoCloseable {
         }
     }
 
-    private void logConnectionFailures(Snapshot snapshot) {
+    private void logPassiveFailures(Snapshot snapshot) {
         for (Map.Entry<String, ServiceState> entry : snapshot.services().entrySet()) {
             ServiceState state = entry.getValue();
-            if (state.action() != FailureAction.BLOCK_CONNECTIONS || state.status() != Status.UNAVAILABLE) {
-                loggedConnectionFailures.remove(entry.getKey());
+            if ((state.action() != FailureAction.BLOCK_CONNECTIONS
+                    && state.action() != FailureAction.DISABLE_FEATURE)
+                    || state.status() != Status.UNAVAILABLE) {
+                loggedPassiveFailures.remove(entry.getKey());
                 continue;
             }
             Failure failure = state.failure().orElseThrow();
-            Failure previous = loggedConnectionFailures.put(entry.getKey(), failure);
+            Failure previous = loggedPassiveFailures.put(entry.getKey(), failure);
             if (!failure.equals(previous)) {
                 plugin.getLogger().log(Level.SEVERE,
                         "Service " + entry.getKey() + " is unavailable (" + failure.reason()
-                                + "); blocking connections",
+                                + "); " + (state.action() == FailureAction.BLOCK_CONNECTIONS
+                                ? "blocking connections" : "feature disabled"),
                         failure.cause());
             }
         }

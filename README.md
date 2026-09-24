@@ -46,10 +46,10 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.8.4")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.9.0")
     // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.8.4")
     // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.8.4")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.8.4")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.9.0")
 }
 ```
 
@@ -73,7 +73,7 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.8.4</version>
+        <version>1.9.0</version>
     </dependency>
     <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.8.4 -->
     <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.8.4 -->
@@ -96,6 +96,36 @@ public final class ExamplePlugin extends PaperPlugin {
 ```
 
 `PaperPlugin` initializes scheduler and MiniMessage utilities for you and exposes the shared `Plugin` contract (`directory()`, `fetchBeans(...)`).
+
+## Optional Paper service readiness
+
+Declare one `ServiceReadiness` bean for the logical services a Paper plugin must publish. `PaperPlugin`
+finds it automatically, installs the admission guard and 60-second startup deadline before
+Spring enable beans run, and closes the binding when the plugin disables. Plugins without the bean
+are unaffected; their main class needs no readiness setup.
+
+```java
+@SpringComponent
+public final class ShopReadinessConfiguration {
+    @Bean
+    public ServiceReadiness readiness() {
+        return ServiceReadiness.builder()
+                .service("shop-runtime", ServiceReadiness.FailureAction.DISABLE_FEATURE)
+                .build();
+    }
+}
+```
+
+Call `ready(service)` only after publishing a complete usable state. Use
+`unavailable(service, failure)` when there is no usable state; use
+`rejectCandidate(service, failure)` when a failed reload leaves the current state usable. Feature
+entry points check `snapshot().isReady(service)` and deny commands, cancel actions, or return an
+unavailable API result as appropriate. `DISABLE_FEATURE` leaves the plugin enabled;
+`DISABLE_PLUGIN`, `BLOCK_CONNECTIONS`, and `STOP_SERVER` apply their respective platform actions.
+The admission message uses a built-in fallback, so it does not depend on operator configuration.
+
+Readiness applies after the plugin loads and declares its services. A jar that cannot load or
+an enable-time code failure is a deployment issue, outside this runtime contract.
 
 ## Quick start (BungeeCord plugins)
 

@@ -1,5 +1,6 @@
 package gg.moonrise.engine.paper.gui;
 
+import gg.moonrise.engine.paper.gui.button.Button;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -7,11 +8,19 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 
+import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Represents the UserInterface interface.
  */
 
 public interface UserInterface {
+
+    /** Default delay between handled button interactions. */
+    Duration DEFAULT_INTERACTION_COOLDOWN = Duration.ofMillis(250);
 
     /**
      * Called when a player opens an inventory.
@@ -46,6 +55,24 @@ public interface UserInterface {
      * Refreshes the inventory of the InteractiveMenu for the specified player.
      */
     void refresh();
+
+    /**
+     * Gets fixed buttons that should be refreshed periodically.
+     *
+     * @return buttons keyed by slot
+     */
+    default Collection<Map.Entry<Integer, Button>> getRefreshingButtons() {
+        return List.of();
+    }
+
+    /**
+     * Gets visible content buttons that should be refreshed periodically.
+     *
+     * @return content buttons keyed by slot
+     */
+    default Collection<Map.Entry<Integer, Button>> getRefreshingContentButtons() {
+        return List.of();
+    }
 
     /**
      * Gets the Inventory associated with this UserInterface.

@@ -34,7 +34,7 @@ public abstract class PaperPluginLoader implements PluginLoader {
 
         resolver.addDependency(dependency("gg.moonrise.moss:moss-paper:1.2.2"));
 
-        resolver.addDependency(dependency("org.incendo:cloud-paper:2.0.0-beta.10"));
+        resolver.addDependency(dependency("org.incendo:cloud-paper:2.0.0"));
         resolver.addDependency(dependency("org.incendo:cloud-annotations:2.0.0"));
 
         addLibraries(resolver);

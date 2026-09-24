@@ -1,5 +1,6 @@
 package gg.moonrise.engine.paper.gui.button;
 
+import gg.moonrise.engine.paper.gui.util.MenuInteractionUtil;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.HumanEntity;
@@ -10,6 +11,7 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -29,6 +31,7 @@ public final class Button {
     private final boolean cancelClicks;
     private long lastRefreshTime = 0L;
     private Inventory inventory;
+    private int slot = -1;
 
 
     /**
@@ -36,7 +39,17 @@ public final class Button {
      * @param inventory the inventory
      */
     public void onAddToInventory(Inventory inventory) {
+        onAddToInventory(inventory, -1);
+    }
+
+    /**
+     * Executes onAddToInventory.
+     * @param inventory the inventory
+     * @param slot the slot
+     */
+    public void onAddToInventory(Inventory inventory, int slot) {
         this.inventory = inventory;
+        this.slot = inventory == null ? -1 : slot;
     }
 
     /**
@@ -81,6 +94,14 @@ public final class Button {
      */
     public Inventory inventory() {
         return inventory;
+    }
+
+    /**
+     * Gets the slot that this button is currently bound to.
+     * @return the bound slot, or -1 when unbound
+     */
+    public int slot() {
+        return slot;
     }
 
     /**
@@ -130,6 +151,49 @@ public final class Button {
      */
     public static Builder builder() {
         return new Builder();
+    }
+
+    /**
+     * Creates a button from a display item function.
+     * @param displayItem the display item function
+     * @return the button
+     */
+    public static Button of(Function<Player, ItemStack> displayItem) {
+        return builder().item(displayItem).build();
+    }
+
+    /**
+     * Creates a button from a fixed item stack. The stack is cloned before each
+     * render so GUI metadata does not mutate the caller-owned instance.
+     * @param itemStack the fixed item stack
+     * @return the button
+     */
+    public static Button of(ItemStack itemStack) {
+        Objects.requireNonNull(itemStack, "itemStack");
+        return of(player -> itemStack.clone());
+    }
+
+    /**
+     * Refresh this button in its current inventory for the first player viewer.
+     * @return true if the button was rendered
+     */
+    public boolean notifyInventory() {
+        if (inventory == null) return false;
+
+        for (HumanEntity viewer : inventory.getViewers()) {
+            if (viewer instanceof Player player) return notifyInventory(player);
+        }
+
+        return false;
+    }
+
+    /**
+     * Refresh this button in its current inventory for a specific player.
+     * @param player the viewer to render for
+     * @return true if the button was rendered
+     */
+    public boolean notifyInventory(Player player) {
+        return MenuInteractionUtil.refreshButton(inventory, slot, this, player);
     }
 
     /**

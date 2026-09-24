@@ -1,5 +1,6 @@
 package gg.moonrise.engine.paper.gui.button;
 
+import gg.moonrise.engine.paper.support.MockBukkitTest;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
@@ -10,11 +11,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ButtonTest {
+class ButtonTest extends MockBukkitTest {
 
     @Test
     void builderRequiresDisplayItem() {
@@ -52,5 +54,16 @@ class ButtonTest {
         button.processClickAction(null, null);
         assertTrue(clicked.get());
         assertSame(button, clickedButton.get());
+    }
+
+    @Test
+    void fixedItemFactoryClonesCallerOwnedStack() {
+        ItemStack source = new ItemStack(Material.DIAMOND);
+        Button button = Button.of(source);
+
+        ItemStack rendered = button.item(null);
+        assertNotNull(rendered);
+        assertEquals(Material.DIAMOND, rendered.getType());
+        assertNotSame(source, rendered);
     }
 }

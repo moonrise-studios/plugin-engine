@@ -8,4 +8,8 @@ public interface CloudCommand<T> {
 
     }
 
+    default boolean shouldEnable() {
+        return true;
+    }
+
 }

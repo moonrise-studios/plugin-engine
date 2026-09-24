@@ -31,11 +31,11 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 
 /**
- * Installs a minimal admission guard before fallible plugin initialization and applies the
+ * Installs the Paper admission guard for a service readiness contract and applies the
  * controller's plugin-disable or server-stop decision on the server thread.
  *
  * <p>The supplied denial text must be available without loading any operator config. A plugin
- * must install this adapter before starting the services it protects. It must still gate its own
+ * receives this adapter from {@code PaperPlugin} before enable-time services run. It must gate its own
  * commands and actions on the matching service state, including work by players already online.</p>
  */
 public final class PaperServiceReadiness implements Listener, AutoCloseable {
@@ -70,8 +70,8 @@ public final class PaperServiceReadiness implements Listener, AutoCloseable {
     }
 
     /**
-     * Registers the guard immediately and binds failure actions. Call at the start of
-     * {@code onEnable()}, before configuration or dependency-injection startup.
+     * Registers the guard immediately and binds failure actions. {@code PaperPlugin} calls this
+     * before enable-time service startup when it finds a readiness bean.
      * @param plugin the owning Paper plugin
      * @param readiness the fixed service contract
      * @param unavailableMessage emergency text independent of operator configuration

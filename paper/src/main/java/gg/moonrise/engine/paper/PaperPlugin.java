@@ -3,13 +3,18 @@ package gg.moonrise.engine.paper;
 import gg.moonrise.engine.Plugin;
 import gg.moonrise.engine.message.util.MiniMessageUtil;
 import gg.moonrise.engine.paper.scheduler.Scheduler;
+import gg.moonrise.engine.paper.readiness.PaperServiceReadiness;
+import gg.moonrise.engine.state.ServiceReadiness;
+import gg.moonrise.engine.state.ServiceReadiness.Failure;
 import gg.moonrise.engine.state.Reloadable;
 import gg.moonrise.moss.paper.MossPaper;
 import lombok.extern.slf4j.Slf4j;
+import net.kyori.adventure.text.Component;
 import org.bukkit.event.Listener;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -19,6 +24,8 @@ import java.util.function.Consumer;
  */
 @Slf4j
 public abstract class PaperPlugin extends MossPaper implements Plugin {
+
+    private PaperServiceReadiness readinessBinding;
 
     @Override
     public void loadInitialComponents(AnnotationConfigApplicationContext context) {
@@ -30,13 +37,45 @@ public abstract class PaperPlugin extends MossPaper implements Plugin {
 
     @Override
     public void onEnable() {
-        super.onEnable();
+        ServiceReadiness readiness = CONTEXT.getBeanProvider(ServiceReadiness.class).getIfAvailable();
+        if (readiness != null) {
+            readinessBinding = PaperServiceReadiness.install(
+                    this,
+                    readiness,
+                    Component.text(getName() + " is unavailable right now. Please contact an administrator."),
+                    Duration.ofSeconds(60)
+            );
+        }
+        try {
+            super.onEnable();
 
-        invokeBeans(
-                Listener.class,
-                listener -> getServer().getPluginManager().registerEvents(listener, this),
-                (listener, e) -> log.error("Failed to register listener: {}", listener.getClass().getSimpleName(), e)
-        );
+            invokeBeans(
+                    Listener.class,
+                    listener -> getServer().getPluginManager().registerEvents(listener, this),
+                    (listener, e) -> log.error("Failed to register listener: {}", listener.getClass().getSimpleName(), e)
+            );
+        } catch (RuntimeException | LinkageError failure) {
+            if (readiness != null) {
+                try {
+                    readiness.expirePending(new Failure("plugin enable failed", failure));
+                } catch (RuntimeException reportFailure) {
+                    failure.addSuppressed(reportFailure);
+                }
+            }
+            throw failure;
+        }
+    }
+
+    @Override
+    public void onDisable() {
+        try {
+            if (readinessBinding != null) {
+                readinessBinding.close();
+            }
+        } finally {
+            readinessBinding = null;
+            super.onDisable();
+        }
     }
 
     @Override

@@ -81,10 +81,12 @@ public final class DialogCanvasRuntime {
     }
 
     /**
-     * Ends every session so no callback keeps running plugin code after disable. Called by {@code PaperPlugin}.
+     * Ends every session so no callback keeps running plugin code after disable, then shuts down the face
+     * download client. Called by {@code PaperPlugin}.
      */
     public void shutdown() {
         sessions.disposeAll(DialogCloseReason.DISABLED);
+        heads.shutdown();
     }
 
     public DialogExecutor executor() {

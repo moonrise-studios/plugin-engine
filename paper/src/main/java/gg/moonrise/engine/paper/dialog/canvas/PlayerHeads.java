@@ -89,7 +89,9 @@ public final class PlayerHeads {
     /**
      * Fetches a face in the background, reusing the cache and any fetch already running.
      * <p>
-     * Failures are logged and resolve to the placeholder, which is cached briefly.
+     * Failures are logged and resolve to the placeholder, which is cached briefly. When the fetch cannot be
+     * scheduled, for example while the plugin disables, the future fails and nothing is cached, so the
+     * next call tries again.
      * @param playerId the player
      * @return the face
      */
@@ -102,21 +104,27 @@ public final class PlayerHeads {
         CompletableFuture<HeadPixels> running = inFlight.putIfAbsent(playerId, future);
         if (running != null) return running;
 
-        executor.async(() -> {
-            HeadPixels pixels = HeadPixels.placeholder();
-            long ttl = FAILURE_TIME_TO_LIVE.toMillis();
-            try {
-                pixels = download(playerId);
-                ttl = TIME_TO_LIVE.toMillis();
-            } catch (Throwable t) {
-                if (t instanceof InterruptedException) Thread.currentThread().interrupt();
-                LOGGER.warn("Failed to load skin for {}: {}", playerId, t.toString());
-            } finally {
-                store(playerId, pixels, ttl);
-                inFlight.remove(playerId, future);
-                future.complete(pixels);
-            }
-        });
+        try {
+            executor.async(() -> {
+                HeadPixels pixels = HeadPixels.placeholder();
+                long ttl = FAILURE_TIME_TO_LIVE.toMillis();
+                try {
+                    pixels = download(playerId);
+                    ttl = TIME_TO_LIVE.toMillis();
+                } catch (Throwable t) {
+                    if (t instanceof InterruptedException) Thread.currentThread().interrupt();
+                    LOGGER.warn("Failed to load skin for {}: {}", playerId, t.toString());
+                } finally {
+                    store(playerId, pixels, ttl);
+                    inFlight.remove(playerId, future);
+                    future.complete(pixels);
+                }
+            });
+        } catch (RuntimeException e) {
+            // A future left in flight would never complete, and every later fetch would wait on it
+            inFlight.remove(playerId, future);
+            future.completeExceptionally(e);
+        }
         return future;
     }
 
@@ -129,6 +137,20 @@ public final class PlayerHeads {
         return CompletableFuture.allOf(playerIds.stream()
                 .map(this::fetch)
                 .toArray(CompletableFuture[]::new));
+    }
+
+    /**
+     * Shuts the download client down so its threads do not outlive the plugin. A later download builds a
+     * new one. Idempotent.
+     */
+    public void shutdown() {
+        HttpClient client;
+        synchronized (this) {
+            client = httpClient;
+            httpClient = null;
+        }
+
+        if (client != null) client.shutdownNow();
     }
 
     private void store(UUID playerId, HeadPixels pixels, long ttl) {

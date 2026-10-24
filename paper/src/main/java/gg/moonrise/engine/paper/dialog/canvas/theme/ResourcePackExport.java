@@ -95,10 +95,10 @@ public final class ResourcePackExport {
     }
 
     /**
-     * Makes a directory hold exactly this pack: writes files that are missing or different and deletes
-     * every other file in it. Use it for a directory dedicated to this theme inside another plugin's
-     * pack sources, such as Nexo's {@code pack/external_packs/<name>}, and regenerate that pack when
-     * {@link SyncResult#changed()} is true.
+     * Makes a directory hold exactly this pack: writes files that are missing or different, deletes
+     * every other file in it, and removes every directory left empty. Use it for a directory dedicated
+     * to this theme inside another plugin's pack sources, such as Nexo's {@code pack/external_packs/<name>},
+     * and regenerate that pack when {@link SyncResult#changed()} is true.
      * @param directory the dedicated target directory
      * @param includePackMeta whether to write {@code pack.mcmeta}
      * @return what changed
@@ -132,11 +132,29 @@ public final class ResourcePackExport {
                 Files.delete(file);
                 deleted++;
             }
+
+            deleteEmptyDirectories(directory);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to sync dialog theme pack to " + directory, e);
         }
 
         return new SyncResult(written, deleted);
+    }
+
+    private static void deleteEmptyDirectories(Path directory) throws IOException {
+        List<Path> directories;
+        try (Stream<Path> walk = Files.walk(directory)) {
+            directories = walk.filter(Files::isDirectory).filter(path -> !path.equals(directory)).toList();
+        }
+
+        // The walk lists a directory before its contents, so in reverse every child is emptied before its parent.
+        for (Path child : directories.reversed()) {
+            try (Stream<Path> entries = Files.list(child)) {
+                if (entries.findAny().isPresent()) continue;
+            }
+
+            Files.delete(child);
+        }
     }
 
     /**
@@ -147,6 +165,16 @@ public final class ResourcePackExport {
         byte[] result = zip;
         if (result != null) return result.clone();
 
+        zip = zip(files);
+        return zip.clone();
+    }
+
+    /**
+     * Builds a deterministic ZIP archive: entries in path order, each with the same fixed timestamp.
+     * @param files the archive entries keyed by path
+     * @return the archive bytes
+     */
+    static byte[] zip(SortedMap<String, byte[]> files) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (ZipOutputStream out = new ZipOutputStream(bytes)) {
             for (Map.Entry<String, byte[]> entry : files.entrySet()) {
@@ -157,11 +185,10 @@ public final class ResourcePackExport {
                 out.closeEntry();
             }
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to build dialog theme pack archive", e);
+            throw new UncheckedIOException("Failed to build pack archive", e);
         }
 
-        zip = bytes.toByteArray();
-        return zip.clone();
+        return bytes.toByteArray();
     }
 
     /**

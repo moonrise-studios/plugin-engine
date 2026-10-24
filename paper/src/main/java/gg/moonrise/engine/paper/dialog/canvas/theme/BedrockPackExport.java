@@ -4,15 +4,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HexFormat;
@@ -21,8 +18,6 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
  * A Bedrock resource pack holding a theme's fixed artwork, such as icons, for Bedrock form buttons.
@@ -37,7 +32,6 @@ import java.util.zip.ZipOutputStream;
  */
 public final class BedrockPackExport {
 
-    private static final LocalDateTime ZIP_TIMESTAMP = LocalDateTime.of(1980, 1, 1, 0, 0);
     private static final int[] MIN_ENGINE_VERSION = {1, 20, 0};
 
     private final DialogTheme theme;
@@ -59,7 +53,7 @@ public final class BedrockPackExport {
         for (Map.Entry<String, ThemeAsset> asset : theme.assets().entrySet()) {
             if (asset.getValue().kind() != ThemeAsset.Kind.FIXED) continue;
 
-            textures.put(texturePath(theme, asset.getKey()) + ".png", png(asset.getValue().image()));
+            textures.put(texturePath(theme, asset.getKey()) + ".png", ThemeCompiler.png(asset.getValue().image()));
         }
 
         byte[] digest = digest(textures);
@@ -101,20 +95,7 @@ public final class BedrockPackExport {
      * @return the archive bytes
      */
     public byte[] zip() {
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        try (ZipOutputStream out = new ZipOutputStream(bytes)) {
-            for (Map.Entry<String, byte[]> entry : files.entrySet()) {
-                ZipEntry zipEntry = new ZipEntry(entry.getKey());
-                zipEntry.setTimeLocal(ZIP_TIMESTAMP);
-                out.putNextEntry(zipEntry);
-                out.write(entry.getValue());
-                out.closeEntry();
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to build Bedrock pack archive", e);
-        }
-
-        return bytes.toByteArray();
+        return ResourcePackExport.zip(files);
     }
 
     /**
@@ -183,16 +164,6 @@ public final class BedrockPackExport {
         }
 
         return ResourcePackExport.sha1(all.toByteArray());
-    }
-
-    private static byte[] png(BufferedImage image) {
-        try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ImageIO.write(image, "png", out);
-            return out.toByteArray();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to encode Bedrock pack texture", e);
-        }
     }
 
     /**

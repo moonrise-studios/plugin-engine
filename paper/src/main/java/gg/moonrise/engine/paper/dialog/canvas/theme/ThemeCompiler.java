@@ -277,7 +277,13 @@ public final class ThemeCompiler {
 
     private String texture(String name, BufferedImage image) {
         String path = "dialog/" + theme.id() + "/" + name + ".png";
-        files.put("assets/" + theme.namespace() + "/textures/" + path, png(image));
+        String file = "assets/" + theme.namespace() + "/textures/" + path;
+        if (files.putIfAbsent(file, png(image)) != null) {
+            throw new IllegalArgumentException("Dialog theme " + theme.namespace() + ":" + theme.id() + " generates the texture " + file
+                    + " twice; rename the asset whose name clashes with a piece generated for another asset, such as <asset>_left,"
+                    + " <asset>_right, <asset>_middle_<width>, or <asset>_<index>");
+        }
+
         return theme.namespace() + ":" + path;
     }
 
@@ -326,7 +332,7 @@ public final class ThemeCompiler {
         return (GSON.toJson(object) + "\n").getBytes(StandardCharsets.UTF_8);
     }
 
-    private static byte[] png(BufferedImage image) {
+    static byte[] png(BufferedImage image) {
         BufferedImage argb = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {

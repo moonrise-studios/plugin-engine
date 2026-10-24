@@ -158,6 +158,17 @@ public class ThemeCompilerTest {
     }
 
     @Test
+    public void rejectsAssetsWhoseTexturesCollide() {
+        DialogTheme theme = DialogTheme.builder("moonrise", "clash")
+                .asset("tab_left", ThemeAsset.fixed(opaque(4, 4)))
+                .build();
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, theme::compiled);
+        assertTrue(error.getMessage().contains("moonrise:clash"), error.getMessage());
+        assertTrue(error.getMessage().contains("assets/moonrise/textures/dialog/clash/asset_tab_left.png"), error.getMessage());
+    }
+
+    @Test
     public void exportsDirectoryAndZip() throws Exception {
         CompiledTheme compiled = DialogTheme.builder("moonrise", "test").build().compiled();
         Path directory = Files.createTempDirectory("dialog-theme");
@@ -192,10 +203,15 @@ public class ThemeCompilerTest {
 
         Path stale = directory.resolve("assets/moonrise/textures/dialog/sync/old.png");
         Files.write(stale, new byte[]{1});
+        Path staleTheme = directory.resolve("assets/moonrise/textures/dialog/old");
+        Files.createDirectories(staleTheme.resolve("icons"));
+        Files.write(staleTheme.resolve("icons/star.png"), new byte[]{1});
         ResourcePackExport.SyncResult second = pack.syncDirectory(directory, false);
 
-        assertEquals(new ResourcePackExport.SyncResult(0, 1), second);
+        assertEquals(new ResourcePackExport.SyncResult(0, 2), second);
         assertFalse(Files.exists(stale));
+        assertFalse(Files.exists(staleTheme), "directories left empty are removed");
+        assertTrue(Files.isDirectory(directory.resolve("assets/moonrise/textures/dialog/sync")));
         assertFalse(pack.syncDirectory(directory, false).changed());
     }
 }

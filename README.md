@@ -704,8 +704,19 @@ it can see their APIs; Paper isolates plugin class loaders, so an installed plug
 engine logs a warning once: Geyser translates the vanilla dialog for Bedrock players, and every Java client is
 treated as new enough.
 
-`PaperPlugin` registers the listener that tracks pack status and quits. Outside `PaperPlugin`, call
-`DialogCanvasRuntime.shared().register(plugin)` during enable.
+`PaperPlugin` registers the listener that tracks pack status and quits, and ends open sessions on disable. The shared
+runtime schedules through the engine `Scheduler`, which only `PaperPlugin` initialises, so outside `PaperPlugin` install
+a runtime backed by your own `DialogExecutor`:
+
+```java
+// onEnable, before any menu opens
+DialogCanvasRuntime runtime = new DialogCanvasRuntime(executor);
+DialogCanvasRuntime.install(runtime);
+runtime.register(plugin);
+
+// onDisable
+runtime.shutdown();
+```
 
 #### Client behaviour to keep in mind
 
@@ -716,8 +727,9 @@ treated as new enough.
   canvas opens.
 - Every component is one text line; line breaks in `text`, labels, and the footer are replaced with spaces. Use
   `paragraph` for multi-line text.
-- A themed screen that needs more lines than the theme's `maxLines` is shown as the vanilla dialog instead, with a
-  warning in the log, so long data never leaves a player without a screen.
+- A themed screen that needs more lines than the theme's `maxLines`, or has a tab row or a row of cards too wide for
+  the theme, is shown as the vanilla dialog instead, with a warning in the log, so long data never leaves a player
+  without a screen.
 - `paragraph` keeps inline colours, decorations, and click events when it wraps; translatable and keybind parts are
   kept whole.
 - Widths are exact for the vanilla ASCII characters. Other characters are estimated, and translatable components are

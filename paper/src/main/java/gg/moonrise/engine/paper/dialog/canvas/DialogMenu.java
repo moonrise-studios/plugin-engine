@@ -36,7 +36,7 @@ import java.util.UUID;
  *     @Override
  *     protected void render(DialogSession<Profile> session, DialogCanvas ui) {
  *         ui.head(session.playerId(), 16);
- *         ui.text(session.data().displayName());
+ *         ui.text(Component.text(session.data().displayName()));
  *         ui.exitButton("<gold>Back", session::close);
  *     }
  * }

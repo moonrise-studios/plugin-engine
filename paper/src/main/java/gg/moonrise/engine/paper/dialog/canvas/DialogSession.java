@@ -56,6 +56,7 @@ public final class DialogSession<S> {
     private final AtomicLong settledTicket = new AtomicLong();
     // The render whose Bedrock form is on the client unanswered, or NO_FORM
     private final AtomicLong shownForm = new AtomicLong(NO_FORM);
+    private final AtomicBoolean overflowWarned = new AtomicBoolean();
     private volatile S data;
     private volatile Dialog currentDialog;
     private volatile BedrockForm currentForm;
@@ -262,12 +263,14 @@ public final class DialogSession<S> {
 
     /**
      * Ends the session and closes the player's dialog screen.
+     * <p>
+     * A Bedrock session only closes its own form, and only while it is unanswered.
      * @param reason why the session ends
      */
     public void close(DialogCloseReason reason) {
-        if (!dispose(reason)) return;
+        if (!dispose(reason) || presentation == DialogPresentation.BEDROCK) return;
 
-        player().ifPresent(player -> runtime.executor().player(player, () -> closeScreen(player), () -> {
+        player().ifPresent(player -> runtime.executor().player(player, player::closeDialog, () -> {
         }));
     }
 
@@ -386,13 +389,18 @@ public final class DialogSession<S> {
     }
 
     /**
-     * Renders the themed screen, or the vanilla one when the content needs more lines than the theme allows.
+     * Renders the themed screen, or the vanilla one when the content does not fit the theme.
      */
     private Dialog themed(DialogCanvas canvas, Component title) {
         try {
             return CanvasRenderer.render(canvas, title).dialog();
         } catch (CanvasOverflowException e) {
-            LOGGER.warn("Dialog menu {} showed a vanilla dialog to {}: {}", menu.getClass().getName(), playerId, e.getMessage());
+            // Every refresh renders again; warn once per session
+            if (overflowWarned.compareAndSet(false, true)) {
+                LOGGER.warn("Dialog menu {} showed a vanilla dialog to {}: {}", menu.getClass().getName(), playerId, e.getMessage());
+            } else {
+                LOGGER.debug("Dialog menu {} showed a vanilla dialog to {}: {}", menu.getClass().getName(), playerId, e.getMessage());
+            }
             return NativeDialogRenderer.render(canvas, title, menu.nativeLayout(), this::dialogAction);
         }
     }
@@ -409,14 +417,6 @@ public final class DialogSession<S> {
         currentForm = form;
         if (!runtime.bedrock().send(player, form)) throw new IllegalStateException("Floodgate or Geyser did not accept the form for " + player.getName());
         shownForm.set(generation.get());
-    }
-
-    private void closeScreen(Player player) {
-        if (presentation == DialogPresentation.BEDROCK) {
-            runtime.bedrock().close(player);
-        } else {
-            player.closeDialog();
-        }
     }
 
     private void handle(Audience audience, long rendered, Runnable action, Exit exit) {
@@ -438,7 +438,7 @@ public final class DialogSession<S> {
                 else render();
             } else if (presentation != DialogPresentation.BEDROCK && runtime.sessions().active(playerId).isEmpty()) {
                 // The exit button must always get the player out of an ended session's screen, but never close a newer one
-                closeScreen(player);
+                player.closeDialog();
             }
             return;
         }

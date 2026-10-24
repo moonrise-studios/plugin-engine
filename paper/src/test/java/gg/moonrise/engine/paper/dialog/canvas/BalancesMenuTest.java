@@ -19,6 +19,7 @@ import io.papermc.paper.registry.data.dialog.DialogBase;
 import io.papermc.paper.registry.data.dialog.body.PlainMessageDialogBody;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
@@ -43,11 +44,13 @@ public class BalancesMenuTest extends MockBukkitTest {
     private DialogCanvasRuntime runtime;
     private DialogTheme theme;
     private BalanceService balances;
+    private DialogCanvasRuntime originalRuntime;
 
     @BeforeEach
     public void setUpRuntime() {
         executor = new TestDialogExecutor();
         runtime = new DialogCanvasRuntime(executor);
+        originalRuntime = DialogCanvasRuntime.shared();
         DialogCanvasRuntime.install(runtime);
         theme = DialogTheme.builder("example", "balances").width(440).build();
         balances = BalancesMenuTest::snapshot;
@@ -55,6 +58,11 @@ public class BalancesMenuTest extends MockBukkitTest {
         for (int rank = 1; rank <= 16; rank++) {
             runtime.heads().put(playerId(rank), HeadPixels.placeholder());
         }
+    }
+
+    @AfterEach
+    public void restoreRuntime() {
+        DialogCanvasRuntime.install(originalRuntime);
     }
 
     @Test

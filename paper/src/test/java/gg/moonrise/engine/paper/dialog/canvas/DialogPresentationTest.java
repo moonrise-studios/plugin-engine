@@ -23,6 +23,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import org.bukkit.entity.Player;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
@@ -46,12 +47,14 @@ public class DialogPresentationTest extends MockBukkitTest {
     private TestBedrockForms bedrock;
     private DialogCanvasRuntime runtime;
     private DialogTheme theme;
+    private DialogCanvasRuntime originalRuntime;
 
     @BeforeEach
     public void setUpRuntime() {
         executor = new TestDialogExecutor();
         bedrock = new TestBedrockForms();
         runtime = new DialogCanvasRuntime(executor, bedrock);
+        originalRuntime = DialogCanvasRuntime.shared();
         DialogCanvasRuntime.install(runtime);
         theme = DialogTheme.builder("example", "balances").width(440).build();
 
@@ -59,6 +62,11 @@ public class DialogPresentationTest extends MockBukkitTest {
         for (int rank = 1; rank <= 16; rank++) {
             runtime.heads().put(playerId(rank), HeadPixels.placeholder());
         }
+    }
+
+    @AfterEach
+    public void restoreRuntime() {
+        DialogCanvasRuntime.install(originalRuntime);
     }
 
     @Test
@@ -513,5 +521,29 @@ public class DialogPresentationTest extends MockBukkitTest {
         pages().open(player, "overview");
         assertFalse(session.isOpen());
         assertEquals(2, bedrock.closed(), "the replaced session's form does not stay in front of the new one");
+    }
+
+    @Test
+    public void leavingThroughABedrockExitButtonClosesNoOtherForm() {
+        PlayerMock player = server.addPlayer("Bedrock");
+        bedrock.markBedrock(player.getUniqueId());
+        DialogSession<String> session = pages().open(player, "overview");
+
+        bedrock.last().onClick().accept(bedrock.button("Close"));
+
+        assertFalse(session.isOpen());
+        assertEquals(0, bedrock.closed(), "the answered form is gone already; another plugin's form must stay");
+    }
+
+    @Test
+    public void closingABedrockSessionClosesItsUnansweredFormOnce() {
+        PlayerMock player = server.addPlayer("Bedrock");
+        bedrock.markBedrock(player.getUniqueId());
+        DialogSession<String> session = pages().open(player, "overview");
+
+        session.close();
+
+        assertFalse(session.isOpen());
+        assertEquals(1, bedrock.closed());
     }
 }

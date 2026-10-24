@@ -728,8 +728,8 @@ runtime.shutdown();
 - Every component is one text line; line breaks in `text`, labels, and the footer are replaced with spaces. Use
   `paragraph` for multi-line text.
 - A themed screen that needs more lines than the theme's `maxLines`, or has a tab row or a row of cards too wide for
-  the theme, is shown as the vanilla dialog instead, with a warning in the log, so long data never leaves a player
-  without a screen.
+  the theme, is shown as the vanilla dialog instead, with a warning in the log once per session, so long data never
+  leaves a player without a screen.
 - `paragraph` keeps inline colours, decorations, and click events when it wraps; translatable and keybind parts are
   kept whole.
 - Widths are exact for the vanilla ASCII characters. Other characters are estimated, and translatable components are

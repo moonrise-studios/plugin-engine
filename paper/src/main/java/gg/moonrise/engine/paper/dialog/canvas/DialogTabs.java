@@ -4,6 +4,7 @@ import gg.moonrise.engine.paper.dialog.canvas.internal.CanvasAction;
 import gg.moonrise.engine.paper.dialog.canvas.internal.CanvasBlock;
 import gg.moonrise.engine.paper.dialog.canvas.internal.CanvasLayout;
 import gg.moonrise.engine.paper.dialog.canvas.internal.CanvasOutline;
+import gg.moonrise.engine.paper.dialog.canvas.internal.CanvasOverflowException;
 import gg.moonrise.engine.paper.dialog.canvas.internal.Interaction;
 import gg.moonrise.engine.paper.dialog.canvas.theme.CompiledAsset;
 import gg.moonrise.engine.paper.dialog.canvas.theme.DialogTheme;
@@ -111,7 +112,7 @@ public final class DialogTabs<T> implements CanvasBlock {
             int minimum = Math.max(normal.minimumWidth(), active.minimumWidth());
             int each = (available - gap * (values.size() - 1)) / values.size();
             if (each < minimum) {
-                throw new IllegalStateException(values.size() + " dialog tabs do not fit the theme width " + available);
+                throw new CanvasOverflowException(values.size() + " dialog tabs do not fit the theme width " + available);
             }
 
             total = gap * (values.size() - 1);

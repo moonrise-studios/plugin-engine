@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BalancesMenuTest extends MockBukkitTest {
@@ -298,16 +297,26 @@ public class BalancesMenuTest extends MockBukkitTest {
     }
 
     @Test
-    public void tooManyTabsFailLoudly() {
+    public void tooManyTabsShowAVanillaDialogInstead() {
         PlayerMock player = viewer("Viewer");
+        List<Integer> values = IntStreamHolder.values(80);
         DialogMenu<Void> menu = new DialogMenu<>("Tabs", theme) {
             @Override
             protected void render(DialogSession<Void> session, DialogCanvas ui) {
-                ui.tabs(IntStreamHolder.values(80), 1);
+                ui.tabs(values, 1);
             }
         };
 
-        assertThrows(IllegalStateException.class, () -> menu.open(player, null));
+        DialogSession<Void> session = menu.open(player, null);
+
+        assertTrue(session.isOpen());
+        assertEquals(DialogPresentation.THEMED, session.presentation());
+        TestDialog dialog = assertInstanceOf(TestDialog.class, session.currentDialog());
+        assertInstanceOf(TestDialogListType.class, dialog.type());
+        PlainMessageDialogBody body = assertInstanceOf(PlainMessageDialogBody.class, dialog.base().body().get(0));
+        assertEquals(440, body.width(), "the vanilla dialog body has the theme width, not the themed panel's");
+        List<String> labels = values.stream().map(String::valueOf).toList();
+        assertEquals(String.join("\n", labels), MiniMessageUtil.componentToPlainText(body.contents()));
     }
 
     private static final class IntStreamHolder {

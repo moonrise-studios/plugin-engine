@@ -24,9 +24,9 @@ import java.util.UUID;
  * click action set on the card applies to every element except buttons, which keep their own action.
  * <p>
  * Without the theme's artwork, a card with a face or a click action becomes one button whose label is
- * the card's text lines, and its own buttons follow it; any other card becomes its text lines. On a
- * Bedrock form that button shows the face, or else the card's first image when the menu names a
- * Bedrock texture for it.
+ * the card's text lines, or its tooltip when it has no text, and its own buttons follow it; any other
+ * card becomes its text lines. On a Bedrock form that button shows the face, or else the card's first
+ * image when the menu names a Bedrock texture for it.
  */
 public final class DialogCard {
 
@@ -243,11 +243,11 @@ public final class DialogCard {
         }
 
         if (onClick != null || head != null) {
-            if (!texts.isEmpty() || head != null) {
-                Component label = Component.join(JoinConfiguration.newlines(), texts);
-                CanvasAction action = onClick == null ? null : CanvasAction.run(onClick);
-                outline.button(new CanvasOutline.Button(label, tooltip, action, false, head, image));
-            }
+            Component label = texts.isEmpty() && tooltip != null
+                    ? tooltip
+                    : Component.join(JoinConfiguration.newlines(), texts);
+            CanvasAction action = onClick == null ? null : CanvasAction.run(onClick);
+            outline.button(new CanvasOutline.Button(label, tooltip, action, false, head, image));
         } else {
             for (Component text : texts) {
                 outline.line(text);

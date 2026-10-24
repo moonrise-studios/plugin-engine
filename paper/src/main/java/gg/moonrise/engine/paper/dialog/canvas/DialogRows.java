@@ -3,6 +3,7 @@ package gg.moonrise.engine.paper.dialog.canvas;
 import gg.moonrise.engine.paper.dialog.canvas.internal.CanvasBlock;
 import gg.moonrise.engine.paper.dialog.canvas.internal.CanvasLayout;
 import gg.moonrise.engine.paper.dialog.canvas.internal.CanvasOutline;
+import gg.moonrise.engine.paper.dialog.canvas.internal.CanvasOverflowException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,7 +96,7 @@ public final class DialogRows<E> implements CanvasBlock {
         int available = layout.contentWidth();
         int width = cardWidth > 0 ? cardWidth : Math.max(16, widest);
         int fitting = (available - gap * (mostCards - 1)) / mostCards;
-        if (fitting < 1) throw new IllegalStateException("Dialog row of " + mostCards + " cards does not fit the theme width");
+        if (fitting < 1) throw new CanvasOverflowException("Dialog row of " + mostCards + " cards does not fit the theme width");
         width = Math.min(width, fitting);
 
         double center = layout.contentLeft() + available / 2.0;

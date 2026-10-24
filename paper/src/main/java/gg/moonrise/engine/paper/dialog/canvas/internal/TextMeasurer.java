@@ -147,6 +147,12 @@ public final class TextMeasurer {
                 for (Glyph kept : line) used += advance(kept);
                 lastSpace = -1;
                 if (glyph.codePoint() == ' ') continue;
+                // The carried word still overflows with this glyph, so it gets a line of its own
+                if (used + advance > maxWidth && !line.isEmpty()) {
+                    lines.add(compose(line));
+                    line.clear();
+                    used = 0;
+                }
             }
 
             if (glyph.codePoint() == ' ') lastSpace = line.size();

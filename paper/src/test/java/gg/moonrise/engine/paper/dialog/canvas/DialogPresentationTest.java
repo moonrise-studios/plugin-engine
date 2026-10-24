@@ -468,6 +468,36 @@ public class DialogPresentationTest extends MockBukkitTest {
     }
 
     @Test
+    public void clickableCardsWithOnlyAnImageKeepTheirActionOffTheme() {
+        AtomicInteger clicks = new AtomicInteger();
+        DialogMenu<Void> menu = new DialogMenu<>("Icons", theme) {
+            @Override
+            protected void render(DialogSession<Void> session, DialogCanvas ui) {
+                ui.card(card -> card.image(DialogTheme.BACK).tooltip("Go back").onClick(clicks::incrementAndGet));
+            }
+
+            @Override
+            public String bedrockImage(String asset) {
+                return asset.equals(DialogTheme.BACK) ? "textures/example/balances/back" : null;
+            }
+        };
+
+        PlayerMock noPack = server.addPlayer("NoPack");
+        DialogSession<Void> vanilla = menu.open(noPack, null);
+        assertEquals(DialogPresentation.NATIVE, vanilla.presentation());
+        click(button(vanilla, "Go back"), noPack);
+        assertEquals(1, clicks.get());
+
+        PlayerMock phone = server.addPlayer("Phone");
+        bedrock.markBedrock(phone.getUniqueId());
+        menu.open(phone, null);
+        BedrockForm.Button button = bedrock.last().buttons().get(bedrock.button("Go back"));
+        assertEquals("textures/example/balances/back", button.image().data());
+        bedrock.last().onClick().accept(bedrock.button("Go back"));
+        assertEquals(2, clicks.get());
+    }
+
+    @Test
     public void anUnansweredBedrockFormIsClosedBeforeTheNextOneOrWhenReplaced() {
         PlayerMock player = server.addPlayer("Bedrock");
         bedrock.markBedrock(player.getUniqueId());

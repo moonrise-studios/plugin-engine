@@ -100,6 +100,19 @@ public class DialogLayoutsTest {
     }
 
     @Test
+    public void wrappingBreaksACarriedWordThatStillOverflows() {
+        TextMeasurer measurer = new TextMeasurer(DialogTheme.builder("moonrise", "test").build().compiled());
+
+        List<Component> lines = measurer.wrap(Component.text("i 你你你你你"), 35);
+
+        for (Component line : lines) {
+            assertTrue(measurer.width(line) <= 35, PlainTextComponentSerializer.plainText().serialize(line));
+        }
+        String joined = String.join("", lines.stream().map(PlainTextComponentSerializer.plainText()::serialize).toList());
+        assertEquals("i你你你你你", joined.replace(" ", ""));
+    }
+
+    @Test
     public void wrappingKeepsTranslatablePartsWhole() {
         TextMeasurer measurer = new TextMeasurer(DialogTheme.builder("moonrise", "test").build().compiled());
         Component text = Component.text("You found a ")

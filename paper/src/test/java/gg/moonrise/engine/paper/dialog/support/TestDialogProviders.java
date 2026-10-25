@@ -140,7 +140,7 @@ public final class TestDialogProviders implements DialogInstancesProvider, Inlin
 
     @Override
     public DialogListType.Builder dialogList(RegistrySet<Dialog> dialogs) {
-        throw new UnsupportedOperationException("Test dialog provider does not implement dialog lists");
+        return new TestDialogListTypeBuilder(dialogs);
     }
 
     @Override
@@ -271,6 +271,9 @@ public final class TestDialogProviders implements DialogInstancesProvider, Inlin
     }
 
     public record TestNoticeType(ActionButton action) implements NoticeType {
+    }
+
+    public record TestDialogListType(RegistrySet<Dialog> dialogs, ActionButton exitAction, int columns, int buttonWidth) implements DialogListType {
     }
 
     private record TestServerLinksType(ActionButton exitAction, int columns, int buttonWidth) implements ServerLinksType {
@@ -669,6 +672,41 @@ public final class TestDialogProviders implements DialogInstancesProvider, Inlin
         @Override
         public MultiActionType build() {
             return new TestMultiActionType(actions, exitAction, columns);
+        }
+    }
+
+    private static final class TestDialogListTypeBuilder implements DialogListType.Builder {
+
+        private final RegistrySet<Dialog> dialogs;
+        private ActionButton exitAction;
+        private int columns = 2;
+        private int buttonWidth = 150;
+
+        private TestDialogListTypeBuilder(RegistrySet<Dialog> dialogs) {
+            this.dialogs = dialogs;
+        }
+
+        @Override
+        public DialogListType.Builder exitAction(ActionButton exitAction) {
+            this.exitAction = exitAction;
+            return this;
+        }
+
+        @Override
+        public DialogListType.Builder columns(int columns) {
+            this.columns = columns;
+            return this;
+        }
+
+        @Override
+        public DialogListType.Builder buttonWidth(int buttonWidth) {
+            this.buttonWidth = buttonWidth;
+            return this;
+        }
+
+        @Override
+        public DialogListType build() {
+            return new TestDialogListType(dialogs, exitAction, columns, buttonWidth);
         }
     }
 }

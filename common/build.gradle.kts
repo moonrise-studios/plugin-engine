@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-common"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.8.4"
+var apiVersion = "1.9.0"
 
 repositories {
     maven("https://repo1.maven.org/maven2/")

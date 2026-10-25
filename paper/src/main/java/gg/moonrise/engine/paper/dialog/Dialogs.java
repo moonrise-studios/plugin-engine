@@ -2,6 +2,7 @@ package gg.moonrise.engine.paper.dialog;
 
 import gg.moonrise.engine.message.Message;
 import gg.moonrise.engine.message.util.MiniMessageUtil;
+import gg.moonrise.engine.paper.dialog.canvas.CanvasDialogBuilder;
 import io.papermc.paper.registry.data.dialog.input.BooleanDialogInput;
 import io.papermc.paper.registry.data.dialog.input.DialogInput;
 import io.papermc.paper.registry.data.dialog.input.NumberRangeDialogInput;
@@ -23,6 +24,18 @@ public final class Dialogs {
 
     public static DialogBuilder create(Player player) {
         return new DialogBuilder(player);
+    }
+
+    /**
+     * Starts a themed graphical dialog built from canvas components.
+     * <p>
+     * Use {@link #create(Player)} for native forms with inputs. For screens reused across players,
+     * extend {@link gg.moonrise.engine.paper.dialog.canvas.DialogMenu} instead.
+     * @param player the viewer
+     * @return the builder
+     */
+    public static CanvasDialogBuilder canvas(Player player) {
+        return new CanvasDialogBuilder(player);
     }
 
     public static TextDialogInput.Builder text(String key, String label) {

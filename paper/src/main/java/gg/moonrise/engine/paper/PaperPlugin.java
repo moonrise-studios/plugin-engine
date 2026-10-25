@@ -2,6 +2,7 @@ package gg.moonrise.engine.paper;
 
 import gg.moonrise.engine.Plugin;
 import gg.moonrise.engine.message.util.MiniMessageUtil;
+import gg.moonrise.engine.paper.dialog.canvas.DialogCanvasRuntime;
 import gg.moonrise.engine.paper.scheduler.Scheduler;
 import gg.moonrise.engine.state.Reloadable;
 import gg.moonrise.moss.paper.MossPaper;
@@ -32,11 +33,19 @@ public abstract class PaperPlugin extends MossPaper implements Plugin {
     public void onEnable() {
         super.onEnable();
 
+        DialogCanvasRuntime.shared().register(this);
+
         invokeBeans(
                 Listener.class,
                 listener -> getServer().getPluginManager().registerEvents(listener, this),
                 (listener, e) -> log.error("Failed to register listener: {}", listener.getClass().getSimpleName(), e)
         );
+    }
+
+    @Override
+    public void onDisable() {
+        DialogCanvasRuntime.shared().shutdown();
+        super.onDisable();
     }
 
     @Override

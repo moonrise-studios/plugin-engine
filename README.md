@@ -12,7 +12,7 @@ Organization: https://github.com/moonrise-studios
 | Module | Artifact | Purpose |
 | --- | --- | --- |
 | common | `gg.moonrise.engine:plugin-engine-common` | Platform-agnostic APIs and helpers (configuration, messages, command abstractions, utilities). |
-| paper | `gg.moonrise.engine:plugin-engine-paper` | Paper-specific implementations (plugin base class, schedulers, command registration, GUI framework, dialogs, universal toasts, item builder, jobs). |
+| paper | `gg.moonrise.engine:plugin-engine-paper` | Paper-specific implementations (plugin base class, schedulers, command registration, GUI framework, dialogs and themed dialog menus, universal toasts, item builder, jobs). |
 | bungeecord | `gg.moonrise.engine:plugin-engine-bungeecord` | BungeeCord-specific implementations (plugin base class, listener registration, Cloud command registration). |
 | velocity | `gg.moonrise.engine:plugin-engine-velocity` | Velocity-specific implementations (plugin base class, lifecycle integration, audiences, Cloud command registration). |
 
@@ -46,10 +46,10 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.8.4")
-    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.8.4")
-    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.8.4")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.8.4")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.9.0")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.9.0")
+    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.9.0")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.9.0")
 }
 ```
 
@@ -73,10 +73,10 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.8.4</version>
+        <version>1.9.0</version>
     </dependency>
-    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.8.4 -->
-    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.8.4 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.9.0 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.9.0 -->
 </dependencies>
 ```
 
@@ -118,7 +118,7 @@ Your plugin build must also declare Velocity API as both `compileOnly` and `anno
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-velocity:1.8.4")
+    implementation("gg.moonrise.engine:plugin-engine-velocity:1.9.0")
     implementation("gg.moonrise.moss:moss-velocity:1.2.3")
     implementation("org.springframework:spring-context:6.2.13")
     implementation("org.incendo:cloud-annotations:2.0.0")
@@ -533,6 +533,213 @@ Dialogs.create(player)
             );
         });
 ```
+
+### Themed dialog menus
+
+`gg.moonrise.engine.paper.dialog.canvas` builds graphical dialog screens (tabs, rows of cards, player faces, themed
+buttons) on top of Paper dialogs and a generated resource pack. Menu code describes screens from data; the engine
+handles font glyphs, negative spacing, click callbacks, per-player sessions, and stale asynchronous results.
+
+A menu is written once and works on every client. The engine picks a `DialogPresentation` per viewer when the menu
+opens and renders the same `render(...)` description in it:
+
+| Viewer | Presentation | What they see |
+| --- | --- | --- |
+| Java, theme pack loaded | `THEMED` | The themed canvas: panel, artwork, tabs, faces |
+| Java, no theme pack | `NATIVE` | A vanilla dialog: the text as its body, every clickable element as a dialog button |
+| Bedrock (Floodgate) | `BEDROCK` | A Floodgate simple form: the text as its content, every clickable element as a form button |
+
+Every presentation runs the same click handlers, with the same stale-screen protection.
+
+```java
+public final class BalancesMenu extends DialogMenu<BalanceSnapshot> {
+
+    private final BalanceService balances;
+
+    public BalancesMenu(BalanceService balances, DialogTheme theme) {
+        super("<aqua>Balances", theme);
+        this.balances = balances;
+    }
+
+    @Override
+    protected void render(DialogSession<BalanceSnapshot> session, DialogCanvas ui) {
+        BalanceSnapshot state = session.data();
+
+        ui.tabs(Currency.values(), state.currency())
+                .label(Currency::displayName)
+                .onSelect(currency -> session.load(() -> balances.loadSnapshot(session.playerId(), currency)));
+
+        ui.centeredRows(DialogLayouts.rows(state.top(), 1, 3, 5, 7), (card, entry) -> {
+            card.head(entry.playerId(), 16);
+            card.text(Component.text(entry.playerName()));
+            card.text(Component.text(entry.formattedBalance(), ui.theme().theme().accentColor()));
+        });
+
+        ui.footerText(Component.text(state.personalSummary()));
+        ui.exitButton("<gold>Back", session::close);
+    }
+}
+
+new BalancesMenu(balanceService, theme).open(player, snapshot);
+```
+
+A complete version lives in `paper/src/test/java/gg/moonrise/engine/paper/dialog/canvas/example`.
+For one-off screens, `Dialogs.canvas(player).theme(theme).title(...).render((session, ui) -> ...).open()` skips the
+subclass. `Dialogs.create(player)` remains the right tool for native forms with inputs.
+
+Canvas components:
+
+| Method | What it draws |
+| --- | --- |
+| `text`, `paragraph` | One line (shortened with `...`) or wrapped text; left, centre, or right aligned |
+| `tabs(values, selected)` | A centred tab row with selected artwork, labels, tooltips, and `onSelect` |
+| `centeredRows(rows, renderer)` | Rows of equal-width cards, each row centred (1-3-5-7 pyramids) |
+| `card`, `head` | One centred card: faces (8, 16, or 24 px), text, images, buttons, links, and a `background` tile drawn behind it |
+| `button(label, action)` | A themed body button; `.selected(true)`, `.width(...)`, `.tooltip(...)` |
+| `link(label, url)` | A themed body button that opens a web page (also `card.link`) |
+| `image(asset)`, `divider()`, `spacer(lines)` | Theme artwork and spacing |
+| `footerText` | A line pinned below everything else |
+| `exitButton(label, handler)` | The native exit button, which also receives Escape; ends the session first |
+| `backButton(label, handler)` | The native exit button as a way back; the session stays open for the handler's next screen |
+
+`DialogLayouts.rows(entries, 1, 3, 5, 7)` and `DialogLayouts.grid(entries, columns)` group entries for `centeredRows`;
+a grid of cards holding one `card.button(...)` each is a button grid whose last row is centred, like vanilla dialogs.
+
+#### Themes and the resource pack
+
+A `DialogTheme` defines the canvas width, panel, colours, and named artwork (`tab`, `tab_selected`, `button`,
+`button_selected`, `back`, `divider`). `DialogTheme.builder(namespace, id)` starts from a working default theme;
+replace any asset with `ThemeAsset.fixed(...)`, `ThemeAsset.stretchable(image, leftInset, rightInset)`, or
+`ThemeAsset.button(fill, border, height)`, and the panel with `ThemePanel.nineSlice(...)` or `ThemePanel.generated(...)`.
+
+`theme.compiled()` generates the resource pack and the matching glyph metadata in one deterministic pass, so the
+pack and the Java layout code never disagree. Export it during enable and deliver it with your existing pack workflow:
+
+```java
+DialogTheme theme = DialogTheme.builder("myplugin", "menus").width(440).build();
+ResourcePackExport pack = theme.compiled().pack();
+
+pack.writeDirectory(packSourceDir, false); // merge into an existing pack, keeping its pack.mcmeta
+pack.syncDirectory(nexoExternalPack, false); // or own a dedicated folder: rewrites changes, deletes stale files
+pack.writeZip(getDataPath().resolve("dialog-theme.zip")); // or host the ZIP yourself
+
+player.sendResourcePacks(ResourcePackRequest.resourcePackRequest()
+        .packs(pack.info(URI.create("https://cdn.example.com/dialog-theme.zip")))
+        .required(true));
+```
+
+The pack contains namespaced textures, one font (`<namespace>:dialog/<id>`), and a
+`dialog-theme.<namespace>.<id>.json` manifest with the build hash and pack id. The font key is baked into every
+rendered component, so pick a namespace your pack pipeline keeps as-is; a post-processor that moves foreign
+namespaces into its own breaks the themed screen while the vanilla fallback keeps working. `pack.mcmeta` declares formats from
+1.21.6 (`63`) to `99`; change that with `packFormat(PackFormat.range(min, max))`. Adding or changing artwork needs a new
+pack build; changing tabs, names, balances, or faces does not.
+
+#### Sessions, loading, and closing
+
+Each `open(player, data)` creates a `DialogSession`. A player has at most one canvas session; opening another one ends
+the previous one with `REPLACED`. Sessions also end on quit, on `close()`, after the exit button, when the plugin
+disables, and once `sessionTimeout()` (10 minutes by default) passes without a render. Expired sessions are closed,
+including the player's screen, by a sweep that runs every 30 seconds.
+
+- `session.load(supplier)` runs the supplier off-thread and shows the result on the player's thread. Each load gets a
+  ticket; only the newest result is shown, so rapid tab clicks always end on the last tab.
+- `session.loadAsync(...)` does the same for an existing `CompletableFuture`.
+- `session.update(data)` and `session.refresh()` re-render immediately. A refresh sends a replacement dialog; native
+  input values, focus, and scroll position are not preserved.
+- Click actions only run for the screen they were rendered on, only for the session's player, and only while the
+  session is open.
+- `render(...)` should only read session data. Fetch from databases in `load`, and preload faces with
+  `session.runtime().heads().preload(ids)`; an uncached face renders as a grey placeholder and is fetched in the background.
+
+Override `onClose`, `onLoadFailure`, `sessionTimeout`, or `title` on `DialogMenu` to customise the lifecycle. `onClose`
+and `onLoadFailure` run on the player's thread while the player is online.
+
+#### Pack and client checks
+
+`open` chooses the presentation like this:
+
+1. Floodgate reports a Bedrock player: `BEDROCK`, or `BEDROCK_CLIENT` when `bedrockForms()` returns `false`.
+2. PacketEvents reports a Java client older than 1.21.6: `UNSUPPORTED_CLIENT`.
+3. `hasResourcePack(player)` is true, or `requiresResourcePack()` is false: `THEMED`.
+4. Otherwise `NATIVE`, or `RESOURCE_PACK_NOT_LOADED` when `nativeFallback()` returns `false`.
+
+When there is a reason instead of a presentation, `onUnavailable(player, data, reason)` runs, which sends a short
+message by default.
+
+`hasResourcePack` checks that the client reported `SUCCESSFULLY_LOADED` for one of `acceptedResourcePacks()`, by
+default the theme's own pack id. When the theme is merged into a server pack whose id changes with every build, such
+as one Nexo generates, override it:
+
+```java
+@Override
+protected boolean hasResourcePack(Player player) {
+    return runtime().packs().isAnyLoaded(player);
+}
+```
+
+`nativeColumns()`, `nativeButtonWidth()`, and `nativeBodyWidth()` size the vanilla dialog. In it and in Bedrock forms,
+artwork is left out, the selected tab is marked `» label «`, and cards with a face or a click action become one
+button labelled with the card's text. Bedrock buttons show the face from `runtime.bedrockHeadImages(...)`, by default
+`https://mc-heads.net/avatar/<uuid>/64`. Bedrock forms cannot open web pages, so links send the address to chat.
+A Bedrock response consumes the form: after a click that shows no new screen, the engine sends the current one again,
+and closing the form runs the exit or back button.
+
+Bedrock form buttons can show images. Cards with a face show it from a web address; a card's icon shows when the
+menu overrides `bedrockImage(asset)` with a Bedrock texture path. `BedrockPackExport.of(theme)` builds a
+`.mcpack` with the theme's fixed artwork at `textures/dialog/<namespace>/<id>/<asset>.png`; install it where Geyser
+loads packs (its `packs` folder) and return `pack.texturePath(asset)`. Bedrock players download it when they join, so a
+new pack needs a Geyser restart and a reconnect.
+
+Geyser does not turn forms into custom JSON UI: it sends the form as JSON and the Bedrock client draws it with its own
+built-in form screen, a scrolling list of 32 px rows with an optional 32 x 32 image beside each button, labels of at
+most two lines, and text above. The engine does not restyle that screen. Forms stack on the client, so a session
+closes its unanswered form before it sends the next one or ends; that close also dismisses forms other plugins have
+open for the player. Floodgate is used when it is enabled, since it reaches Geyser on a proxy too; otherwise Geyser on
+this server (`Geyser-Spigot`) is used directly. Web images (player faces) show loading bars until they arrive.
+
+Bedrock forms go through the Floodgate or Geyser API on the backend, and the old-client check through PacketEvents. A
+plugin that shades the engine must declare `floodgate`, `Geyser-Spigot`, and `packetevents` as soft dependencies (in `paper-plugin.yml`, with `join-classpath: true`) so
+it can see their APIs; Paper isolates plugin class loaders, so an installed plugin is not enough. Without that the
+engine logs a warning once: Geyser translates the vanilla dialog for Bedrock players, and every Java client is
+treated as new enough.
+
+`PaperPlugin` registers the listener that tracks pack status and quits, and ends open sessions on disable. The shared
+runtime schedules through the engine `Scheduler`, which only `PaperPlugin` initialises, so outside `PaperPlugin` install
+a runtime backed by your own `DialogExecutor`:
+
+```java
+// onEnable, before any menu opens
+DialogCanvasRuntime runtime = new DialogCanvasRuntime(executor);
+DialogCanvasRuntime.install(runtime);
+runtime.register(plugin);
+
+// onDisable
+runtime.shutdown();
+```
+
+#### Client behaviour to keep in mind
+
+- With `exitButton`, Escape runs the exit handler. The session ends and the screen closes before the handler runs, so
+  the handler can open any other dialog. With `backButton`, Escape closes the screen on the client and runs the
+  handler; when the handler shows nothing new, the current screen is shown again. Without an exit button the dialog has no footer, and Escape closes the screen
+  on the client without telling the server; the session then lives until it times out, the player quits, or another
+  canvas opens.
+- Every component is one text line; line breaks in `text`, labels, and the footer are replaced with spaces. Use
+  `paragraph` for multi-line text.
+- A themed screen that needs more lines than the theme's `maxLines`, or has a tab row or a row of cards too wide for
+  the theme, is shown as the vanilla dialog instead, with a warning in the log once per session, so long data never
+  leaves a player without a screen.
+- `paragraph` keeps inline colours, decorations, and click events when it wraps; translatable and keybind parts are
+  kept whole.
+- Widths are exact for the vanilla ASCII characters. Other characters are estimated, and translatable components are
+  measured by their key, so such text can shift its own line a few pixels off centre.
+- Clicks are reliable on the text line a button's label sits on. Artwork drawn above or below that line may not be
+  clickable on 1.21.6 to 1.21.8 clients, which hit-test one text line at a time.
+- Tooltips and selected states are supported. Hover callbacks, dragging, and per-element animation are not.
+- The vanilla dialog warning button next to the title cannot be removed.
+- Layout is unit-tested against the vanilla font metrics, not in a running client. Check new themes in a real client
+  at the GUI scales you support, including clicks after keyboard navigation.
 
 ## Toasts
 

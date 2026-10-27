@@ -23,7 +23,7 @@ dependencies {
 
     // Cloud Command Framework
     compileOnly("org.incendo:cloud-annotations:2.0.0")
-    compileOnly("org.incendo:cloud-paper:2.0.0")
+    compileOnly("org.incendo:cloud-paper:2.0.1")
 
     // Moss
     compileOnly("gg.moonrise.moss:moss-common:1.2.2")

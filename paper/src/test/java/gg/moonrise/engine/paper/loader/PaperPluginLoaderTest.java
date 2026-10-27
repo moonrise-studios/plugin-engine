@@ -30,16 +30,17 @@ class PaperPluginLoaderTest {
                 .map(dependency -> dependency.getArtifact().toString())
                 .toList();
 
-        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.0"));
+        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.1"));
+        assertFalse(coordinates.contains("org.incendo:cloud-paper:jar:2.0.0"));
         assertFalse(coordinates.contains("org.incendo:cloud-paper:jar:2.0.0-beta.10"));
     }
 
     @Test
     void libraryReplacesTheEngineDefaultWithTheSameArtifact() throws ReflectiveOperationException {
-        List<String> coordinates = resolvedCoordinates(loader(List.of("org.incendo:cloud-paper:2.0.1")));
+        List<String> coordinates = resolvedCoordinates(loader(List.of("org.incendo:cloud-paper:2.0.2")));
 
         assertEquals(1, coordinates.stream().filter(value -> value.startsWith("org.incendo:cloud-paper:")).count());
-        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.1"));
+        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.2"));
         assertTrue(coordinates.contains("org.incendo:cloud-annotations:jar:2.0.0"));
     }
 
@@ -48,7 +49,7 @@ class PaperPluginLoaderTest {
         List<String> coordinates = resolvedCoordinates(loader(List.of("com.github.ben-manes.caffeine:caffeine:3.2.3")));
 
         assertEquals("com.github.ben-manes.caffeine:caffeine:jar:3.2.3", coordinates.getLast());
-        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.0"));
+        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.1"));
     }
 
     @Test

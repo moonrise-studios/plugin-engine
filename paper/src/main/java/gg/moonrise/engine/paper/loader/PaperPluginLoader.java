@@ -22,7 +22,7 @@ public abstract class PaperPluginLoader implements PluginLoader {
             "jakarta.annotation:jakarta.annotation-api:3.0.0",
             "de.exlll:configlib-yaml:4.8.1",
             "gg.moonrise.moss:moss-paper:1.2.2",
-            "org.incendo:cloud-paper:2.0.0",
+            "org.incendo:cloud-paper:2.0.1",
             "org.incendo:cloud-annotations:2.0.0"
     );
 

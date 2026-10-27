@@ -20,7 +20,7 @@ Organization: https://github.com/moonrise-studios
 
 - Java 21
 - Paper API `1.21.8-R0.1-SNAPSHOT` (for the `paper` module)
-- Paper 26.2 command registration through Cloud Paper `2.0.0`
+- Paper 26.2 and 26.3 command registration through Cloud Paper `2.0.1`
 - BungeeCord API `1.21-R0.5-SNAPSHOT` (for the `bungeecord` module)
 - Velocity API `3.4.0-SNAPSHOT` and Cloud Velocity `2.0.0-beta.10` (for the `velocity` module)
 - Optional PacketEvents `2.12.x` (Java Edition toasts)

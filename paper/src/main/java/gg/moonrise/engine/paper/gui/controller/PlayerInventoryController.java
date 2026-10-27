@@ -88,7 +88,7 @@ public class PlayerInventoryController implements Listener, SyncJob {
 
         UserInterface ui = holder.getMenu();
 
-        if (ui.cancelClicks() || ui.checkCancelClick(event.getSlot())) {
+        if (ui.cancelClicks() || clickedMenuSlot(event) && ui.checkCancelClick(event.getRawSlot())) {
             event.setCancelled(true);
             event.setResult(Event.Result.DENY);
         }
@@ -160,6 +160,17 @@ public class PlayerInventoryController implements Listener, SyncJob {
             MenuInteractionUtil.refreshButton(inventory, entry.getKey(), button, player);
             refreshedButtons.add(button);
         }
+    }
+
+    /**
+     * Buttons live only in the menu's top inventory. {@link InventoryClickEvent#getSlot()} indexes whichever
+     * inventory was clicked, so a player-inventory click would read the wrong menu slot or fall past its end.
+     * The raw slot matches the menu slot only when it lies inside the top inventory, and is negative for
+     * clicks outside the window.
+     */
+    private static boolean clickedMenuSlot(InventoryClickEvent event) {
+        int rawSlot = event.getRawSlot();
+        return rawSlot >= 0 && rawSlot < event.getView().getTopInventory().getSize();
     }
 
     private InteractiveMenuHolder<?> getMenuHolder(InventoryHolder holder) {

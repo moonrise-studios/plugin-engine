@@ -22,7 +22,9 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MenuInteractionUtilTest extends MockBukkitTest {
 
@@ -136,6 +138,20 @@ class MenuInteractionUtilTest extends MockBukkitTest {
         );
 
         assertEquals(0, interactions.get());
+    }
+
+    @Test
+    void slotsOutsideTheInventoryNeverCancel() {
+        PlayerMock player = server.addPlayer();
+        Inventory inventory = Bukkit.createInventory(null, 9);
+        Map<UUID, Button> buttons = new HashMap<>();
+        Button button = Button.of(viewer -> new ItemStack(Material.DIAMOND));
+        buttons.put(button.uuid(), button);
+        MenuInteractionUtil.renderButton(inventory, 8, button, player);
+
+        assertTrue(MenuInteractionUtil.checkCancelClick(inventory, buttons, 8));
+        assertFalse(MenuInteractionUtil.checkCancelClick(inventory, buttons, 9));
+        assertFalse(MenuInteractionUtil.checkCancelClick(inventory, buttons, -999));
     }
 
     private static InventoryClickEvent click(PlayerMock player, int slot) {

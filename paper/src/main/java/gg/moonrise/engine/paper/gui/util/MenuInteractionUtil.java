@@ -160,6 +160,7 @@ public final class MenuInteractionUtil {
 
     public static boolean checkCancelClick(Inventory inventory, Map<UUID, Button> buttonById, int slot) {
         if (inventory == null) return false;
+        if (slot < 0 || slot >= inventory.getSize()) return false;
 
         ItemStack item = inventory.getItem(slot);
         if (item == null || item.getType().isAir()) return false;

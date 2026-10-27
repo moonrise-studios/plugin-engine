@@ -155,23 +155,31 @@ public final class ExampleVelocityPlugin extends VelocityPlugin {
 
 ## Optional Paper library loader
 
-If you need extra runtime libraries, extend `PaperPluginLoader`:
+If you need extra runtime libraries, extend `PaperPluginLoader` and return their Maven coordinates from
+`libraries()`:
 
 ```java
 package com.example;
 
 import gg.moonrise.engine.paper.loader.PaperPluginLoader;
-import org.eclipse.aether.graph.Dependency;
-import io.papermc.paper.plugin.loader.library.impl.MavenLibraryResolver;
+
+import java.util.List;
 
 public final class ExamplePluginLoader extends PaperPluginLoader {
     @Override
-    public void addLibraries(MavenLibraryResolver resolver) {
-        Dependency dep = dependency("com.example:example-lib:1.2.3");
-        resolver.addDependency(dep);
+    public List<String> libraries() {
+        return List.of(
+                "com.example:example-lib:1.2.3",
+                "org.incendo:cloud-paper:2.0.1"
+        );
     }
 }
 ```
+
+A library with the same `groupId:artifactId` as one the engine resolves by default (Spring, Jakarta
+annotations, configlib, Moss, Cloud) replaces that default, so a plugin can pin a newer version, such as
+`cloud-paper` above, without both versions being resolved. `addLibraries(MavenLibraryResolver)` still runs
+after these for dependencies that need a custom `Dependency`.
 
 ## Commands
 

@@ -77,15 +77,15 @@ Use this as the default main-class shape. `PaperPlugin` already handles Moss boo
 public final class ExamplePluginLoader extends PaperPluginLoader {
 
     @Override
-    public void addLibraries(MavenLibraryResolver resolver) {
-        resolver.addDependency(dependency("com.github.ben-manes.caffeine:caffeine:3.2.3"));
+    public List<String> libraries() {
+        return List.of("com.github.ben-manes.caffeine:caffeine:3.2.3");
     }
 }
 ```
 
-Use this when a `compileOnly` dependency such as Caffeine is needed at runtime.
+Use this when a `compileOnly` dependency such as Caffeine is needed at runtime. A library with the same `groupId:artifactId` as an engine default, such as `org.incendo:cloud-paper`, replaces that default instead of being resolved alongside it.
 
-Keep the plugin loader class and descriptor entry even when `addLibraries` ends up empty. `PaperPluginLoader` performs base registrations through its superclass path, so the plugin still needs that loader hook to run.
+Keep the plugin loader class and descriptor entry even when `libraries()` ends up empty. `PaperPluginLoader` performs base registrations through its superclass path, so the plugin still needs that loader hook to run.
 
 ### 4. Config model
 

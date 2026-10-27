@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-paper"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.9.0"
+var apiVersion = "1.10.0"
 
 repositories {
     maven("https://repo1.maven.org/maven2/")
@@ -23,7 +23,7 @@ dependencies {
 
     // Cloud Command Framework
     compileOnly("org.incendo:cloud-annotations:2.0.0")
-    compileOnly("org.incendo:cloud-paper:2.0.0")
+    compileOnly("org.incendo:cloud-paper:2.0.1")
 
     // Moss
     compileOnly("gg.moonrise.moss:moss-common:1.2.2")

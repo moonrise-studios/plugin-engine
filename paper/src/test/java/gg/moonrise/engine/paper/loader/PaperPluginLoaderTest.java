@@ -13,6 +13,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PaperPluginLoaderTest {
@@ -29,8 +30,62 @@ class PaperPluginLoaderTest {
                 .map(dependency -> dependency.getArtifact().toString())
                 .toList();
 
-        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.0"));
+        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.1"));
+        assertFalse(coordinates.contains("org.incendo:cloud-paper:jar:2.0.0"));
         assertFalse(coordinates.contains("org.incendo:cloud-paper:jar:2.0.0-beta.10"));
+    }
+
+    @Test
+    void libraryReplacesTheEngineDefaultWithTheSameArtifact() throws ReflectiveOperationException {
+        List<String> coordinates = resolvedCoordinates(loader(List.of("org.incendo:cloud-paper:2.0.2")));
+
+        assertEquals(1, coordinates.stream().filter(value -> value.startsWith("org.incendo:cloud-paper:")).count());
+        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.2"));
+        assertTrue(coordinates.contains("org.incendo:cloud-annotations:jar:2.0.0"));
+    }
+
+    @Test
+    void libraryWithANewArtifactIsAddedAfterTheDefaults() throws ReflectiveOperationException {
+        List<String> coordinates = resolvedCoordinates(loader(List.of("com.github.ben-manes.caffeine:caffeine:3.2.3")));
+
+        assertEquals("com.github.ben-manes.caffeine:caffeine:jar:3.2.3", coordinates.getLast());
+        assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.1"));
+    }
+
+    @Test
+    void addLibrariesStillRunsAfterTheDefaults() throws ReflectiveOperationException {
+        PaperPluginLoader loader = new PaperPluginLoader() {
+            @Override
+            public void addLibraries(MavenLibraryResolver resolver) {
+                resolver.addDependency(dependency("com.github.ben-manes.caffeine:caffeine:3.2.3"));
+            }
+        };
+
+        assertEquals("com.github.ben-manes.caffeine:caffeine:jar:3.2.3", resolvedCoordinates(loader).getLast());
+    }
+
+    @Test
+    void libraryWithoutAVersionIsRejected() {
+        PaperPluginLoader loader = loader(List.of("org.example:library"));
+
+        assertThrows(IllegalArgumentException.class, () -> loader.classloader(new CapturingClasspathBuilder()));
+    }
+
+    private static PaperPluginLoader loader(List<String> libraries) {
+        return new PaperPluginLoader() {
+            @Override
+            public List<String> libraries() {
+                return libraries;
+            }
+        };
+    }
+
+    private static List<String> resolvedCoordinates(PaperPluginLoader loader) throws ReflectiveOperationException {
+        CapturingClasspathBuilder builder = new CapturingClasspathBuilder();
+        loader.classloader(builder);
+        return dependencies(builder.resolver()).stream()
+                .map(dependency -> dependency.getArtifact().toString())
+                .toList();
     }
 
     @SuppressWarnings("unchecked")

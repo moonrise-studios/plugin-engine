@@ -20,7 +20,7 @@ Organization: https://github.com/moonrise-studios
 
 - Java 21
 - Paper API `1.21.8-R0.1-SNAPSHOT` (for the `paper` module)
-- Paper 26.2 command registration through Cloud Paper `2.0.0`
+- Paper 26.2 and 26.3 command registration through Cloud Paper `2.0.1`
 - BungeeCord API `1.21-R0.5-SNAPSHOT` (for the `bungeecord` module)
 - Velocity API `3.4.0-SNAPSHOT` and Cloud Velocity `2.0.0-beta.10` (for the `velocity` module)
 - Optional PacketEvents `2.12.x` (Java Edition toasts)
@@ -46,10 +46,10 @@ Then add dependencies:
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.9.0")
-    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.9.0")
-    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.9.0")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.9.0")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.10.0")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.10.0")
+    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.10.0")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.10.0")
 }
 ```
 
@@ -73,10 +73,10 @@ dependencies {
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.9.0</version>
+        <version>1.10.0</version>
     </dependency>
-    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.9.0 -->
-    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.9.0 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.10.0 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.10.0 -->
 </dependencies>
 ```
 
@@ -118,7 +118,7 @@ Your plugin build must also declare Velocity API as both `compileOnly` and `anno
 
 ```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-velocity:1.9.0")
+    implementation("gg.moonrise.engine:plugin-engine-velocity:1.10.0")
     implementation("gg.moonrise.moss:moss-velocity:1.2.3")
     implementation("org.springframework:spring-context:6.2.13")
     implementation("org.incendo:cloud-annotations:2.0.0")
@@ -155,23 +155,31 @@ public final class ExampleVelocityPlugin extends VelocityPlugin {
 
 ## Optional Paper library loader
 
-If you need extra runtime libraries, extend `PaperPluginLoader`:
+If you need extra runtime libraries, extend `PaperPluginLoader` and return their Maven coordinates from
+`libraries()`:
 
 ```java
 package com.example;
 
 import gg.moonrise.engine.paper.loader.PaperPluginLoader;
-import org.eclipse.aether.graph.Dependency;
-import io.papermc.paper.plugin.loader.library.impl.MavenLibraryResolver;
+
+import java.util.List;
 
 public final class ExamplePluginLoader extends PaperPluginLoader {
     @Override
-    public void addLibraries(MavenLibraryResolver resolver) {
-        Dependency dep = dependency("com.example:example-lib:1.2.3");
-        resolver.addDependency(dep);
+    public List<String> libraries() {
+        return List.of(
+                "com.example:example-lib:1.2.3",
+                "org.incendo:cloud-paper:2.0.1"
+        );
     }
 }
 ```
+
+A library with the same `groupId:artifactId` as one the engine resolves by default (Spring, Jakarta
+annotations, configlib, Moss, Cloud) replaces that default, so a plugin can pin a newer version, such as
+`cloud-paper` above, without both versions being resolved. `addLibraries(MavenLibraryResolver)` still runs
+after these for dependencies that need a custom `Dependency`.
 
 ## Commands
 

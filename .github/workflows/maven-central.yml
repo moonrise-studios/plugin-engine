@@ -32,7 +32,7 @@ jobs:
     if: ${{ (github.event_name == 'release' && !github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') }}
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 80
     concurrency:
       group: maven-central
       queue: max
@@ -67,5 +67,7 @@ jobs:
           : "${ORG_GRADLE_PROJECT_mavenCentralPassword:?Missing MAVEN_CENTRAL_PASSWORD}"
           : "${ORG_GRADLE_PROJECT_signingInMemoryKey:?Missing MAVEN_CENTRAL_SIGNING_KEY}"
           bash ./gradlew -PcentralRelease publishToMavenCentral
+      # Publishing returns once Central has validated the deployment; Central then publishes it on its own
+      # schedule (often 15 minutes or more), so this step waits up to an hour for every file to appear.
       - name: Verify published artifacts
-        run: python3 .github/scripts/check_central_release.py --published ./*/build/publications/mavenJava/pom-default.xml
+        run: python3 .github/scripts/check_central_release.py --published --wait-minutes 60 ./*/build/publications/mavenJava/pom-default.xml

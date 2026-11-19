@@ -31,9 +31,29 @@ def on_central(coordinate, suffix=".pom"):
         raise
 
 
+def wait_for_publication(coordinates, version, wait_minutes):
+    # Central publishes a validated deployment on its own schedule, often 15 minutes or more.
+    files = (".pom", ".jar", "-sources.jar", "-javadoc.jar")
+    start = time.monotonic()
+    deadline = start + wait_minutes * 60
+    while True:
+        missing = [(gav, suffix) for gav in coordinates for suffix in files if not on_central(gav, suffix)]
+        waited = int((time.monotonic() - start) / 60)
+        if not missing:
+            print(f"All Maven Central publications are visible for {version} after {waited} minute(s).", flush=True)
+            return
+        if time.monotonic() >= deadline:
+            raise SystemExit(f"Maven Central has yet to expose {missing} after {wait_minutes:g} minute(s); "
+                             "the deployment may still be publishing (check the Central Portal deployments page)")
+        print(f"Waiting for Maven Central ({waited} minute(s)): {len(missing)} file(s) not visible yet", flush=True)
+        time.sleep(30)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--published", action="store_true")
+    parser.add_argument("--wait-minutes", type=float, default=60,
+                        help="with --published: how long to wait for the release to appear on Maven Central")
     parser.add_argument("poms", nargs=4, type=Path)
     args = parser.parse_args()
 
@@ -47,15 +67,8 @@ def main():
         raise SystemExit(f"Release tag {tag} does not match publication version {version}")
 
     if args.published:
-        files = (".pom", ".jar", "-sources.jar", "-javadoc.jar")
-        for attempt in range(13):
-            missing = [(gav, suffix) for gav in coordinates for suffix in files if not on_central(gav, suffix)]
-            if not missing:
-                print(f"All Maven Central publications are visible for {version}.")
-                return
-            if attempt < 12:
-                time.sleep(10)
-        raise SystemExit(f"Maven Central has yet to expose {missing}")
+        wait_for_publication(coordinates, version, args.wait_minutes)
+        return
 
     existing = [gav for gav in coordinates if on_central(gav)]
     if existing and len(existing) != len(coordinates):

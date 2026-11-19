@@ -20,6 +20,8 @@ def on_central(coordinate, suffix=".pom"):
     group, artifact, version = coordinate
     base = "https://repo.maven.apache.org/maven2"
     url = f"{base}/{group.replace('.', '/')}/{artifact}/{version}/{artifact}-{version}{suffix}"
+    # The CDN can retain a 404 from before the publication became visible.
+    url = f"{url}?central-check={time.time_ns()}"
     try:
         with urlopen(Request(url, method="HEAD"), timeout=15) as response:
             return response.status == 200

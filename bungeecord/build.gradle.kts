@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-bungeecord"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.10.1"
+var apiVersion = "1.10.2"
 
 repositories {
     maven("https://repo1.maven.org/maven2/")
@@ -25,8 +25,8 @@ dependencies {
     compileOnly("org.incendo:cloud-bungee:2.0.0-beta.10")
 
     // Moss
-    compileOnly("gg.moonrise.moss:moss-common:1.2.2")
-    compileOnly("gg.moonrise.moss:moss-bungeecord:1.2.2")
+    compileOnly("gg.moonrise.moss:moss-common:1.2.3")
+    compileOnly("gg.moonrise.moss:moss-bungeecord:1.2.3")
 
     // Adventure
     compileOnly("net.kyori:adventure-api:4.26.1")

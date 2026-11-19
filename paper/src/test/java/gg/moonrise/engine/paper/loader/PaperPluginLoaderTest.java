@@ -5,6 +5,7 @@ import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
 import io.papermc.paper.plugin.loader.library.ClassPathLibrary;
 import io.papermc.paper.plugin.loader.library.impl.MavenLibraryResolver;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -33,6 +34,25 @@ class PaperPluginLoaderTest {
         assertTrue(coordinates.contains("org.incendo:cloud-paper:jar:2.0.1"));
         assertFalse(coordinates.contains("org.incendo:cloud-paper:jar:2.0.0"));
         assertFalse(coordinates.contains("org.incendo:cloud-paper:jar:2.0.0-beta.10"));
+    }
+
+    @Test
+    void resolvesOnlyFromTheMavenCentralMirror() throws ReflectiveOperationException {
+        CapturingClasspathBuilder builder = new CapturingClasspathBuilder();
+        new PaperPluginLoader() {
+        }.classloader(builder);
+
+        List<RemoteRepository> repositories = repositories(builder.resolver());
+
+        assertEquals(List.of("central"), repositories.stream().map(RemoteRepository::getId).toList());
+        assertFalse(repositories.getFirst().getUrl().contains("repo.moonrise.gg"));
+    }
+
+    @Test
+    void defaultMossIsTheFirstReleaseOnMavenCentral() throws ReflectiveOperationException {
+        List<String> coordinates = resolvedCoordinates(loader(List.of()));
+
+        assertTrue(coordinates.contains("gg.moonrise.moss:moss-paper:jar:1.2.3"));
     }
 
     @Test
@@ -94,6 +114,14 @@ class PaperPluginLoaderTest {
         Field field = MavenLibraryResolver.class.getDeclaredField("dependencies");
         field.setAccessible(true);
         return List.copyOf((List<Dependency>) field.get(resolver));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<RemoteRepository> repositories(MavenLibraryResolver resolver)
+            throws ReflectiveOperationException {
+        Field field = MavenLibraryResolver.class.getDeclaredField("repositories");
+        field.setAccessible(true);
+        return List.copyOf((List<RemoteRepository>) field.get(resolver));
     }
 
     private static final class CapturingClasspathBuilder implements PluginClasspathBuilder {

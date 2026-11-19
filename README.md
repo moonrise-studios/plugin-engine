@@ -31,57 +31,48 @@ Organization: https://github.com/moonrise-studios
 
 ## Installation
 
-Releases from `1.10.1` are published to Maven Central under `gg.moonrise.engine`. The Moonrise Maven repository also hosts older releases and snapshots.
+Releases from `1.10.1` are published to Maven Central under `gg.moonrise.engine`, so no extra repository is
+needed. Older releases and snapshots remain on the Moonrise Maven repository
+(`https://repo.moonrise.gg/repository/maven-releases/` and `.../maven-snapshots/`); add it only to consume one of
+those.
 
 ### Gradle (Kotlin DSL)
 
 ```kotlin
 repositories {
     mavenCentral()
-    maven("https://repo.moonrise.gg/repository/maven-releases/")
-    maven("https://repo.moonrise.gg/repository/maven-snapshots/")
 }
-```
 
-Then add dependencies:
-
-```kotlin
 dependencies {
-    implementation("gg.moonrise.engine:plugin-engine-paper:1.10.1")
-    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.10.1")
-    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.10.1")
-    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.10.1")
+    implementation("gg.moonrise.engine:plugin-engine-paper:1.10.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-bungeecord:1.10.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-velocity:1.10.2")
+    // or: implementation("gg.moonrise.engine:plugin-engine-common:1.10.2")
 }
 ```
 
 ### Maven
 
-```xml
-<repositories>
-    <repository>
-        <id>moonrise-releases</id>
-        <url>https://repo.moonrise.gg/repository/maven-releases/</url>
-    </repository>
-    <repository>
-        <id>moonrise-snapshots</id>
-        <url>https://repo.moonrise.gg/repository/maven-snapshots/</url>
-    </repository>
-</repositories>
-```
+Maven Central is Maven's default repository, so only the dependency is needed:
 
 ```xml
 <dependencies>
     <dependency>
         <groupId>gg.moonrise.engine</groupId>
         <artifactId>plugin-engine-paper</artifactId>
-        <version>1.10.1</version>
+        <version>1.10.2</version>
     </dependency>
-    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.10.1 -->
-    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.10.1 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-bungeecord:1.10.2 -->
+    <!-- or: gg.moonrise.engine:plugin-engine-velocity:1.10.2 -->
 </dependencies>
 ```
 
-Use `-SNAPSHOT` versions when consuming snapshot builds.
+### Runtime libraries (Paper)
+
+`PaperPluginLoader` resolves the engine's runtime libraries (Spring, Moss, ConfigLib, Cloud) and the plugin's
+`libraries()` at server start from Maven Central only, through Paper's Central mirror
+(`PAPER_DEFAULT_CENTRAL_REPOSITORY` or Google's mirror). A plugin that needs a library from another repository
+adds that repository in `addLibraries(MavenLibraryResolver)`.
 
 ## Quick start (Paper plugins)
 

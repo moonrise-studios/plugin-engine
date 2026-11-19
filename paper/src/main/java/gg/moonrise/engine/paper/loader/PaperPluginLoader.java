@@ -13,7 +13,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Represents the SkylandsPluginLoader class.
+ * Paper plugin loader that resolves the engine's runtime libraries (Spring, Moss, ConfigLib, Cloud) and the
+ * plugin's own {@link #libraries()} at server start. Every library is resolved from Maven Central through Paper's
+ * Central mirror ({@code PAPER_DEFAULT_CENTRAL_REPOSITORY}, the {@code org.bukkit.plugin.java.LibraryLoader.centralURL}
+ * system property, or Google's Maven Central mirror). A plugin that needs another repository adds it in
+ * {@link #addLibraries(MavenLibraryResolver)}.
  */
 public abstract class PaperPluginLoader implements PluginLoader {
 
@@ -21,7 +25,7 @@ public abstract class PaperPluginLoader implements PluginLoader {
             "org.springframework:spring-context:6.2.13",
             "jakarta.annotation:jakarta.annotation-api:3.0.0",
             "de.exlll:configlib-yaml:4.8.1",
-            "gg.moonrise.moss:moss-paper:1.2.2",
+            "gg.moonrise.moss:moss-paper:1.2.3",
             "org.incendo:cloud-paper:2.0.1",
             "org.incendo:cloud-annotations:2.0.0"
     );
@@ -37,8 +41,6 @@ public abstract class PaperPluginLoader implements PluginLoader {
         MavenLibraryResolver resolver = new MavenLibraryResolver();
 
         resolver.addRepository(new RemoteRepository.Builder("central", "default", getDefaultMavenCentralMirror()).build());
-        resolver.addRepository(new RemoteRepository.Builder("moonrise-releases", "default", "https://repo.moonrise.gg/repository/maven-releases/").build());
-        resolver.addRepository(new RemoteRepository.Builder("moonrise-snapshots", "default", "https://repo.moonrise.gg/repository/maven-snapshots/").build());
 
         for (String coordinates : runtimeLibraries()) {
             resolver.addDependency(dependency(coordinates));
@@ -59,7 +61,8 @@ public abstract class PaperPluginLoader implements PluginLoader {
     }
 
     /**
-     * Executes addLibraries.
+     * Adds anything else to the resolver after the runtime libraries, such as another repository for a library
+     * that is not on Maven Central.
      * @param resolver the resolver
      */
 

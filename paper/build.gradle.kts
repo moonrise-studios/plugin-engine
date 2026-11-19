@@ -6,7 +6,7 @@ plugins {
 
 var id = "plugin-engine-paper"
 var domain = "gg.moonrise.engine"
-var apiVersion = "1.10.1"
+var apiVersion = "1.10.2"
 
 repositories {
     maven("https://repo1.maven.org/maven2/")
@@ -26,8 +26,8 @@ dependencies {
     compileOnly("org.incendo:cloud-paper:2.0.1")
 
     // Moss
-    compileOnly("gg.moonrise.moss:moss-common:1.2.2")
-    compileOnly("gg.moonrise.moss:moss-paper:1.2.2")
+    compileOnly("gg.moonrise.moss:moss-common:1.2.3")
+    compileOnly("gg.moonrise.moss:moss-paper:1.2.3")
 
     // PlaceholderAPI
     compileOnly("me.clip:placeholderapi:2.11.7")

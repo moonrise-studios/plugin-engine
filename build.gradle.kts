@@ -14,10 +14,6 @@ subprojects {
         maven("https://repo1.maven.org/maven2/")
         mavenCentral()
 
-        // Moonrise
-        maven("https://repo.moonrise.gg/repository/maven-releases/")
-        maven("https://repo.moonrise.gg/repository/maven-snapshots/")
-
         // PaperMC
         maven("https://repo.papermc.io/repository/maven-public/")
 

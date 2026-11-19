@@ -31,12 +31,13 @@ Organization: https://github.com/moonrise-studios
 
 ## Installation
 
-Add Moonrise Studios Maven repository:
+Releases from `1.10.1` are published to Maven Central under `gg.moonrise.engine`. The Moonrise Maven repository also hosts older releases and snapshots.
 
 ### Gradle (Kotlin DSL)
 
 ```kotlin
 repositories {
+    mavenCentral()
     maven("https://repo.moonrise.gg/repository/maven-releases/")
     maven("https://repo.moonrise.gg/repository/maven-snapshots/")
 }
@@ -909,12 +910,18 @@ From repository root:
 ./gradlew clean build
 ```
 
-Publishing (used by CI for `release` / `snapshot` branches):
+Publishing to Moonrise Nexus:
 
 ```bash
 ./gradlew clean publish -PisRelease=true   # releases repo
 ./gradlew clean publish -PisRelease=false  # snapshots repo
 ```
+
+### Publishing to Maven Central
+
+Bump all four module versions together on `main`, then publish a GitHub release from that commit with a matching tag such as `1.10.1`. GitHub Actions tests the build and publishes the signed Common, Paper, BungeeCord, and Velocity artifacts. The **Maven Central** workflow can also be run manually against `main`.
+
+GitHub Actions uses `MAVEN_CENTRAL_USERNAME` and `MAVEN_CENTRAL_PASSWORD` from a Sonatype user token with publishing access to `gg.moonrise`. Set `MAVEN_CENTRAL_SIGNING_KEY` to the ASCII-armored private key and `MAVEN_CENTRAL_SIGNING_PASSWORD` to its passphrase. The public key must be available from a keyserver supported by Central.
 
 ## AI runtime files
 

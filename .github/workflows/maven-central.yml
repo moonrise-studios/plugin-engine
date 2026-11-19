@@ -1,0 +1,73 @@
+name: Maven Central
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test and build documentation
+        run: bash ./gradlew check javadocJar
+
+  publish:
+    if: ${{ (github.event_name == 'release' && !github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') }}
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: maven-central
+      queue: max
+    env:
+      CENTRAL_RELEASE_TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify release belongs to main
+        run: git merge-base --is-ancestor HEAD origin/main
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check release coordinates
+        id: release
+        run: |
+          bash ./gradlew generatePomFileForMavenJavaPublication
+          python3 .github/scripts/check_central_release.py ./*/build/publications/mavenJava/pom-default.xml
+      - name: Sign and publish
+        if: steps.release.outputs.publish == 'true'
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.MAVEN_CENTRAL_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_CENTRAL_SIGNING_PASSWORD }}
+          ORG_GRADLE_PROJECT_SONATYPE_CLOSE_TIMEOUT_SECONDS: '1200'
+        run: |
+          : "${ORG_GRADLE_PROJECT_mavenCentralUsername:?Missing MAVEN_CENTRAL_USERNAME}"
+          : "${ORG_GRADLE_PROJECT_mavenCentralPassword:?Missing MAVEN_CENTRAL_PASSWORD}"
+          : "${ORG_GRADLE_PROJECT_signingInMemoryKey:?Missing MAVEN_CENTRAL_SIGNING_KEY}"
+          bash ./gradlew -PcentralRelease publishToMavenCentral
+      - name: Verify published artifacts
+        if: steps.release.outputs.publish == 'true'
+        run: python3 .github/scripts/check_central_release.py --published ./*/build/publications/mavenJava/pom-default.xml

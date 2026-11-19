@@ -17,14 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Test and build documentation
         run: bash ./gradlew check javadocJar
 
@@ -39,17 +39,17 @@ jobs:
     env:
       CENTRAL_RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
       - name: Verify release belongs to main
         run: git merge-base --is-ancestor HEAD origin/main
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Check release coordinates
         id: release
         run: |
@@ -69,5 +69,4 @@ jobs:
           : "${ORG_GRADLE_PROJECT_signingInMemoryKey:?Missing MAVEN_CENTRAL_SIGNING_KEY}"
           bash ./gradlew -PcentralRelease publishToMavenCentral
       - name: Verify published artifacts
-        if: steps.release.outputs.publish == 'true'
         run: python3 .github/scripts/check_central_release.py --published ./*/build/publications/mavenJava/pom-default.xml

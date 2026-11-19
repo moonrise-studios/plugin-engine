@@ -67,7 +67,11 @@ subprojects {
                 }
             }
             configure<MavenPublishBaseExtension> {
-                publishToMavenCentral(automaticRelease = true, validateDeployment = DeploymentValidation.PUBLISHED)
+                // Wait only until Central has validated the deployment (signatures, POMs, sources and javadoc).
+                // Central's own publishing step afterwards often takes 15 minutes or more, longer than the
+                // plugin's fixed 15-minute wait for PUBLISHED; the workflow's "Verify published artifacts" step
+                // waits for the release to appear on Maven Central instead.
+                publishToMavenCentral(automaticRelease = true, validateDeployment = DeploymentValidation.VALIDATED)
                 signAllPublications()
             }
         }
